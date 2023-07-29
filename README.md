@@ -6,6 +6,13 @@
 
 Kotlin multiplatform library that implements content sharing. Share text, images, and URLs seamlessly with a unified API, providing developers with a hassle-free integration process.
 
+| Content type | Status |
+|----------|--------|
+| text/plain | ✅ |
+| text/html  | 👷 |
+| image/* | 👷 |
+| video/* | 👷 |
+
 ### Getting Started
 
 #### Android
