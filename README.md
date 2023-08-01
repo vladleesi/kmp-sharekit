@@ -4,7 +4,7 @@
 
 ### Overview
 
-Kotlin multiplatform library that implements content sharing. Share text, images, and URLs seamlessly with a unified API, providing developers with a hassle-free integration process.
+Kotlin multiplatform library that implements content sharing for Android & iOS platforms. Share text, images, and video seamlessly.
 
 | Content type | Status |
 |----------|--------|
