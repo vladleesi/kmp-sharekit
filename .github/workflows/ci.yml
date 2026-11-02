@@ -109,4 +109,13 @@ jobs:
         if: steps.promote.outputs.promoted == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh workflow run release.yml --ref master --field sha="$GITHUB_SHA" --field confirm=true
+        run: |
+          # A newly promoted workflow can take a moment to appear in the Actions API.
+          for attempt in 1 2 3 4 5 6; do
+            if gh workflow run release.yml --ref master --field sha="$GITHUB_SHA" --field confirm=true; then
+              exit 0
+            fi
+            echo "Waiting for release workflow registration (attempt $attempt)."
+            sleep 5
+          done
+          exit 1
