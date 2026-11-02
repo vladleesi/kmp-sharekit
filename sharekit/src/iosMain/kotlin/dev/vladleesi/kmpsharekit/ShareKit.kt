@@ -14,6 +14,8 @@ import platform.UIKit.UIWindowScene
 import platform.UIKit.popoverPresentationController
 
 public actual object ShareKit {
+    public actual fun isSupported(): Boolean = true
+
     public actual fun shareText(text: String) {
         checkMainThread()
         val presenter =

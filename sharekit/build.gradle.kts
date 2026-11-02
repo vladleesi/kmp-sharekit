@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -28,6 +29,26 @@ kotlin {
         }
     }
 
+    js {
+        browser {
+            testTask {
+                useKarma {
+                    useChromeHeadless()
+                }
+            }
+        }
+    }
+    @OptIn(ExperimentalWasmDsl::class)
+    wasmJs {
+        browser {
+            testTask {
+                useKarma {
+                    useChromeHeadless()
+                }
+            }
+        }
+    }
+
     listOf(iosArm64(), iosSimulatorArm64(), iosX64()).forEach { target ->
         target.binaries.framework {
             baseName = "ShareKit"
@@ -53,7 +74,9 @@ mavenPublishing {
     publishToMavenCentral(automaticRelease = false)
     pom {
         name.set("ShareKit")
-        description.set("Plain-text sharing for Kotlin Multiplatform apps on Android and iOS.")
+        description.set(
+            "Native text sharing for Kotlin Multiplatform and Compose Multiplatform on Android, iOS, and supported browsers (JS/WasmJS).",
+        )
         url.set("https://github.com/vladleesi/kmp-sharekit")
         licenses {
             license {

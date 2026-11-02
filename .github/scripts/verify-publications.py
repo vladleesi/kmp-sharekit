@@ -21,6 +21,8 @@ artifacts = {
     "kmp-sharekit-iosarm64": "klib",
     "kmp-sharekit-iossimulatorarm64": "klib",
     "kmp-sharekit-iosx64": "klib",
+    "kmp-sharekit-js": "klib",
+    "kmp-sharekit-wasm-js": "klib",
 }
 ns = {"m": "http://maven.apache.org/POM/4.0.0"}
 
@@ -48,7 +50,7 @@ for artifact, extension in artifacts.items():
         require(module["component"].get(field) == expected, f"Incorrect module {field}: {artifact}")
     filenames = [f"{stem}.{extension}", f"{stem}.pom", f"{stem}.module",
                  f"{stem}-sources.jar", f"{stem}-javadoc.jar"]
-    if extension == "klib":
+    if artifact.startswith("kmp-sharekit-ios"):
         filenames.append(f"{stem}-metadata.jar")
     for filename in filenames:
         file = directory / filename
@@ -59,6 +61,22 @@ for artifact, extension in artifacts.items():
         require(any(name.endswith(".kt") for name in sources.namelist()), f"No Kotlin sources: {artifact}")
     with zipfile.ZipFile(directory / f"{stem}-javadoc.jar") as documentation:
         require(documentation.testzip() is None, f"Invalid Javadoc jar: {artifact}")
+    if artifact in ("kmp-sharekit-js", "kmp-sharekit-wasm-js"):
+        expected_platform = "js" if artifact == "kmp-sharekit-js" else "wasm"
+        for usage in ("kotlin-api", "kotlin-runtime"):
+            variants = [variant for variant in module["variants"]
+                        if variant["attributes"].get("org.gradle.usage") == usage
+                        and variant["attributes"].get("org.gradle.category") == "library"]
+            require(bool(variants), f"Missing {usage} variant: {artifact}")
+            for variant in variants:
+                attributes = variant["attributes"]
+                require(attributes.get("org.jetbrains.kotlin.platform.type") == expected_platform,
+                        f"Incorrect browser platform: {artifact}")
+                if expected_platform == "wasm":
+                    require(attributes.get("org.jetbrains.kotlin.wasm.target") == "js",
+                            "Wasm publication must target JavaScript, not WASI")
+                require(any(file["url"] == f"{stem}.klib" for file in variant.get("files", [])),
+                        f"Missing browser klib reference: {artifact}")
 
 metadata = json.loads((repository / "kmp-sharekit" / version / f"kmp-sharekit-{version}.module").read_text())
 platforms = {variant["available-at"]["module"] for variant in metadata["variants"] if "available-at" in variant}

@@ -8,6 +8,8 @@ import java.lang.ref.WeakReference
 public actual object ShareKit {
     private var activityReference: WeakReference<Activity>? = null
 
+    public actual fun isSupported(): Boolean = true
+
     /** Registers the current Activity without retaining it. Call from `onResume`. */
     public fun setActivity(activity: Activity) {
         checkMainThread()

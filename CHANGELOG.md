@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0 — 2026-11-02
+
+- Add Kotlin/JS and Kotlin/WasmJS browser targets with native text sharing through the Web Share API. WASI is not supported.
+- Preserve `ShareKit.shareText(text): Unit` and existing Android and iOS behavior. Browser calls start sharing immediately, ignore cancellation, and log asynchronous errors.
+- Add common `isSupported()` for Android, iOS, JS, and WasmJS, plus browser-only `shareText(text, onResult)` with original browser error names exposed through `BrowserShareException`.
+- Check secure-context and Web Share availability and user activation when exposed. Never silently copy text to the clipboard.
+- Add shared browser tests running on both JS and WasmJS, browser CI checks, and validation of all seven Maven Central publications.
+- Document asynchronous results, HTTPS, user gestures, permissions policy, browser limitations, and explicit fallback UX.
+- Document common Kotlin and Compose Multiplatform usage, including mobile/desktop browser support and native host setup.
+
 ## 0.1.0 — 2026-11-02
 
 - Prepare the initial Maven Central release of ShareKit, supporting plain-text sharing on Android and iOS.

@@ -47,6 +47,29 @@ jobs:
       - name: Check formatting, test Android, and build AAR
         run: ./gradlew ktlintCheck :sharekit:testAndroidHostTest :sharekit:bundleAndroidMainAar --stacktrace
 
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.ref || github.ref }}
+      - uses: actions/setup-java@v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - uses: gradle/actions/setup-gradle@v6.4.1
+        with:
+          cache-provider: basic
+      - name: Test JS and WasmJS in Chrome
+        env:
+          CHROME_BIN: /usr/bin/google-chrome
+        run: ./gradlew :sharekit:jsBrowserTest :sharekit:wasmJsBrowserTest --stacktrace
+
   apple:
     runs-on: macos-26
     timeout-minutes: 30
@@ -77,7 +100,7 @@ jobs:
           python3 .github/scripts/verify-publications.py
 
   promote:
-    needs: [android, apple]
+    needs: [android, browser, apple]
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop' && github.repository == 'vladleesi/kmp-sharekit'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
