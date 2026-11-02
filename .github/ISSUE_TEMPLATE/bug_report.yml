@@ -1,0 +1,23 @@
+name: Bug report
+description: Report a reproducible problem with ShareKit.
+body:
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: ShareKit and Kotlin versions, platform, OS version, and device or simulator.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Include a minimal code example and relevant logs. Remove credentials and private data.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true

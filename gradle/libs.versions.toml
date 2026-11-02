@@ -1,0 +1,17 @@
+[versions]
+# Latest versions within Kotlin's fully supported Gradle/AGP compatibility range.
+kotlin = "2.4.21"
+agp = "9.3.1"
+ktlint-plugin = "14.2.0"
+ktlint-engine = "1.8.0"
+robolectric = "4.17"
+maven-publish = "0.37.0"
+
+[libraries]
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+
+[plugins]
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+android-multiplatform = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint-plugin" }
+maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "maven-publish" }

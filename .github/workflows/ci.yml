@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+  workflow_call:
+    inputs:
+      ref:
+        description: Commit to validate when called by the release workflow.
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.ref || github.ref }}
+      - name: Check pull request target
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_BRANCH: ${{ github.base_ref }}
+          HEAD_BRANCH: ${{ github.head_ref }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          if [[ "$BASE_BRANCH" != develop ]] && ! [[ "$BASE_BRANCH" == master && "$HEAD_BRANCH" == develop && "$HEAD_REPOSITORY" == "$GITHUB_REPOSITORY" ]]; then
+            echo '::error::Contributor pull requests must target develop. Only develop may be promoted to master.'
+            exit 1
+          fi
+      - uses: actions/setup-java@v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v4.0.4
+        with:
+          packages: 'platform-tools platforms;android-37.0 build-tools;36.0.0'
+      - uses: gradle/actions/setup-gradle@v6.4.1
+        with:
+          cache-provider: basic
+      - name: Check formatting, test Android, and build AAR
+        run: ./gradlew ktlintCheck :sharekit:testAndroidHostTest :sharekit:bundleAndroidMainAar --stacktrace
+
+  apple:
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.ref || github.ref }}
+      - uses: actions/setup-java@v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v6.4.1
+        with:
+          cache-provider: basic
+      - uses: android-actions/setup-android@v4.0.4
+        with:
+          packages: 'platform-tools platforms;android-37.0 build-tools;36.0.0'
+      - name: Compile and link every iOS architecture, then run simulator tests
+        run: >-
+          ./gradlew
+          :sharekit:compileKotlinIosArm64 :sharekit:compileKotlinIosSimulatorArm64 :sharekit:compileKotlinIosX64
+          :sharekit:linkDebugFrameworkIosArm64 :sharekit:linkDebugFrameworkIosSimulatorArm64
+          :sharekit:linkDebugFrameworkIosX64 :sharekit:iosSimulatorArm64Test --stacktrace
+      - name: Validate all Maven publications locally
+        run: |
+          ./gradlew :sharekit:publishAllPublicationsToValidationRepository -PsignAllPublications=false --stacktrace
+          python3 .github/scripts/verify-publications.py

@@ -1,0 +1,17 @@
+name: Feature request
+description: Suggest an improvement to ShareKit.
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Describe the use case and any current workaround.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Describe the desired behavior or API, including affected platforms.
+    validations:
+      required: true
