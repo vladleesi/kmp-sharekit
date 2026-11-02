@@ -27,6 +27,8 @@ Android host tests use Robolectric on API 23 and 37; they do not replace testing
 
 `VERSION_NAME` in `gradle.properties` is the only release version setting. ShareKit follows semantic versioning independently of Kotlin and Android tooling. Before a release, update it and `CHANGELOG.md`, and keep README installation examples current. Release tags use `v<version>` (first release: `v0.1.0`).
 
+Renovate uses the [shared preset](https://github.com/vladleesi/renovate-config) to report updates in its Dependency Dashboard. Updates require dashboard approval and target `develop`; automerge is disabled.
+
 ## Publishing
 
 Publications use `dev.vladleesi:kmp-sharekit` and the version above. The publishing plugin generates Android, iOS, and KMP metadata artifacts, source jars, and required Javadoc classifier jars. API documentation is provided as KDoc in the sources.

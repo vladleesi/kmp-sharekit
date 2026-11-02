@@ -18,7 +18,10 @@ public actual object ShareKit {
      * Compatibility entry point. Resolves [provider] immediately and keeps only a weak reference.
      * Prefer [setActivity] or the explicit Activity overload of [shareText].
      */
-    @Deprecated("Use setActivity(activity); the provider is resolved immediately.")
+    @Deprecated(
+        message = "Use setActivity(activity); the provider is resolved immediately.",
+        replaceWith = ReplaceWith("ShareKit.setActivity(provider())", "dev.vladleesi.kmpsharekit.ShareKit"),
+    )
     public fun setActivityProvider(provider: () -> Activity) {
         setActivity(provider())
     }
