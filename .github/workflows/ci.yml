@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [master, develop]
+    branches: [develop]
   pull_request:
   workflow_call:
     inputs:
@@ -75,3 +75,38 @@ jobs:
         run: |
           ./gradlew :sharekit:publishAllPublicationsToValidationRepository -PsignAllPublications=false --stacktrace
           python3 .github/scripts/verify-publications.py
+
+  promote:
+    needs: [android, apple]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop' && github.repository == 'vladleesi/kmp-sharekit'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      actions: write
+    concurrency:
+      group: promote-master
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Fast-forward master to the verified develop commit
+        id: promote
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git fetch origin develop master
+          if [[ "$GITHUB_SHA" != "$(git rev-parse origin/develop)" ]]; then
+            echo 'A newer develop commit exists; its CI run will handle promotion.'
+            exit 0
+          fi
+          git merge-base --is-ancestor origin/master "$GITHUB_SHA"
+          git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin "$GITHUB_SHA:refs/heads/master"
+          echo 'promoted=true' >> "$GITHUB_OUTPUT"
+      - name: Start the release workflow on master
+        if: steps.promote.outputs.promoted == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run release.yml --ref master --field sha="$GITHUB_SHA" --field confirm=true

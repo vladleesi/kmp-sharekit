@@ -12,7 +12,16 @@ Plain-text sharing for Kotlin Multiplatform apps on Android and iOS.
 - Android API 21 and later.
 - iOS 15 and later: devices (`iosArm64`), Apple Silicon simulators (`iosSimulatorArm64`), and Intel simulators (`iosX64`).
 
-ShareKit opens the system share sheet with plain text. HTML, images, files, and video are not implemented. It does not report the selected destination or whether sharing completed.
+## Sharing support
+
+| Content | Status |
+| --- | --- |
+| Plain text | Implemented |
+| HTML | Planned |
+| Images | Planned |
+| Video | Planned |
+
+Planned formats have no release date. ShareKit does not report the selected destination or whether sharing completed.
 
 ## Installation
 

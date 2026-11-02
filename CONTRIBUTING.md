@@ -1,6 +1,6 @@
 # Contributing
 
-Open an issue for bugs or proposed API changes. Branch from `develop` and target all contributor pull requests at `develop`. Keep changes focused, describe the behavior change, and add tests when behavior changes. Maintainers promote verified changes to the protected `master` branch.
+Open an issue for bugs or proposed API changes. Branch from `develop` and target all contributor pull requests at `develop`. Keep changes focused, describe the behavior change, and add tests when behavior changes. CI promotes verified `develop` commits to the protected `master` branch.
 
 ## Development
 
@@ -46,4 +46,6 @@ For releases, verify the `dev.vladleesi` namespace in [Central Portal](https://c
 
 Publish the corresponding public key to a public keyserver and keep a secure backup of the private key. Local signing can use the publisher's [in-memory signing properties](https://vanniktech.github.io/gradle-maven-publish-plugin/central/#secrets) through environment variables or private user Gradle properties. Never put credentials in this repository or logs.
 
-Push only verified changes to `develop` and wait for CI. Create the matching version tag from that commit and publish a stable GitHub release. The tag workflow rechecks that exact commit and requires the GitHub release to exist before signing and publishing to Maven Central. To retry a failed attempt, rerun its Release workflow. Workflow dispatch also supports an existing tag with explicit confirmation once the workflow is available on the default branch. Central versions are immutable; do not republish a successful version.
+After both CI checks pass on `develop`, CI fast-forwards `master` to that exact commit and starts the Release workflow there. It never force-pushes or overwrites divergent history. A newer `develop` commit supersedes an older run awaiting promotion.
+
+The Release workflow verifies the master commit, reruns validation, creates `v<version>` and a stable GitHub release, then signs and publishes to Maven Central. A version already tagged at an older commit is skipped until `VERSION_NAME` is bumped. To retry a failed release, rerun its failed jobs or dispatch Release on `master` with the original commit SHA and explicit confirmation. Central versions are immutable; do not republish a successful version.

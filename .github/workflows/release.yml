@@ -2,15 +2,15 @@ name: Release
 
 on:
   push:
-    tags: ['v*']
+    branches: [master]
   workflow_dispatch:
     inputs:
-      tag:
-        description: Existing release tag, such as v0.1.0.
-        required: true
+      sha:
+        description: Master commit to release; leave empty for the current master commit.
+        required: false
         type: string
       confirm:
-        description: Publish the GitHub release version to Maven Central.
+        description: Create the version tag, publish the GitHub release, and publish to Maven Central.
         required: true
         default: false
         type: boolean
@@ -24,22 +24,21 @@ concurrency:
 
 jobs:
   version:
-    if: github.repository == 'vladleesi/kmp-sharekit' && (github.event_name != 'workflow_dispatch' || inputs.confirm)
+    if: github.repository == 'vladleesi/kmp-sharekit' && github.ref == 'refs/heads/master' && (github.event_name != 'workflow_dispatch' || inputs.confirm)
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
       sha: ${{ steps.version.outputs.sha }}
       tag: ${{ steps.version.outputs.tag }}
+      release: ${{ steps.version.outputs.release }}
     steps:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
-          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.tag) || github.ref }}
-      - name: Verify the tag and repository version
+          ref: ${{ inputs.sha || github.sha }}
+      - name: Verify the master commit and release version
         id: version
-        env:
-          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           python3 - <<'PY'
           import os
@@ -48,23 +47,69 @@ jobs:
           import subprocess
           properties = dict(line.split('=', 1) for line in Path('gradle.properties').read_text().splitlines() if '=' in line)
           version = properties['VERSION_NAME']
-          tag = os.environ['RELEASE_TAG']
-          if not re.fullmatch(r'(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)', version) or tag != f'v{version}':
-              raise SystemExit('Release tag must match the stable VERSION_NAME in gradle.properties.')
+          if not re.fullmatch(r'(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)', version):
+              raise SystemExit('A release requires a stable semantic VERSION_NAME in gradle.properties.')
           sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
-          subprocess.run(['git', 'merge-base', '--is-ancestor', sha, 'origin/develop'], check=True)
+          subprocess.run(['git', 'merge-base', '--is-ancestor', sha, 'origin/master'], check=True)
+          tag = f'v{version}'
+          existing = subprocess.run(['git', 'rev-parse', '--verify', f'refs/tags/{tag}^{{}}'], capture_output=True, text=True)
+          release = existing.returncode != 0 or existing.stdout.strip() == sha
+          if not release:
+              print(f'{tag} already belongs to another commit. Bump VERSION_NAME to publish a new release.')
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
-              output.write(f'sha={sha}\ntag={tag}\n')
+              output.write(f'sha={sha}\ntag={tag}\nrelease={str(release).lower()}\n')
           PY
 
   verify:
     needs: version
+    if: needs.version.outputs.release == 'true'
+    # The reused CI declares a promotion job; its branch guard skips it on master.
+    permissions:
+      contents: write
+      actions: write
     uses: ./.github/workflows/ci.yml
     with:
       ref: ${{ needs.version.outputs.sha }}
 
-  publish:
+  github-release:
     needs: [version, verify]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          ref: ${{ needs.version.outputs.sha }}
+      - name: Create the matching tag and GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.version.outputs.tag }}
+        run: |
+          if ! git show-ref --verify --quiet "refs/tags/$RELEASE_TAG"; then
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' tag -a "$RELEASE_TAG" -m "ShareKit $RELEASE_TAG"
+            git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin "refs/tags/$RELEASE_TAG"
+          fi
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          import re
+          version = os.environ['RELEASE_TAG'][1:]
+          changelog = Path('CHANGELOG.md').read_text()
+          section = re.search(rf'^## {re.escape(version)}\b[^\n]*\n(.*?)(?=^## |\Z)', changelog, re.M | re.S)
+          if not section:
+              raise SystemExit('The release version must have a changelog entry.')
+          (Path(os.environ['RUNNER_TEMP']) / 'release-notes.md').write_text(section.group(1).strip() + '\n')
+          PY
+          if ! gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" --verify-tag --title "ShareKit $RELEASE_TAG" --notes-file "$RUNNER_TEMP/release-notes.md" --repo "$GITHUB_REPOSITORY"
+          fi
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,isPrerelease --jq 'if .isDraft or .isPrerelease then error("A stable published GitHub release is required") else . end'
+
+  publish:
+    needs: [version, github-release]
     runs-on: macos-26
     timeout-minutes: 45
     steps:
@@ -72,20 +117,6 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ needs.version.outputs.sha }}
-      - name: Require the published GitHub release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ needs.version.outputs.tag }}
-        run: |
-          gh release view "$RELEASE_TAG" --json isDraft,isPrerelease --repo "$GITHUB_REPOSITORY" > "$RUNNER_TEMP/release.json"
-          python3 - <<'PY'
-          import json
-          import os
-          from pathlib import Path
-          release = json.loads((Path(os.environ['RUNNER_TEMP']) / 'release.json').read_text())
-          if release['isDraft'] or release['isPrerelease']:
-              raise SystemExit('Publish a stable GitHub release before publishing to Maven Central.')
-          PY
       - uses: actions/setup-java@v6.1.0
         with:
           distribution: temurin
