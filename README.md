@@ -2,7 +2,7 @@
 
 Lightweight native text sharing for Kotlin Multiplatform and Compose Multiplatform.
 
-[![Version](https://img.shields.io/badge/version-0.3.1-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.4.0-blue)](CHANGELOG.md)
 [![Build](https://github.com/vladleesi/kmp-sharekit/actions/workflows/ci.yml/badge.svg)](https://github.com/vladleesi/kmp-sharekit/actions/workflows/ci.yml)
 [![Maven Central](https://img.shields.io/maven-central/v/dev.vladleesi/kmp-sharekit)](https://central.sonatype.com/artifact/dev.vladleesi/kmp-sharekit)
 [![License](https://img.shields.io/badge/license-Apache_2.0-blue)](LICENSE)
@@ -20,14 +20,14 @@ JVM desktop supports Compose Multiplatform apps on macOS, Windows, and Linux whe
 
 ## Installation
 
-Version 0.3.1 is being prepared for review. Use 0.3.0 until 0.3.1 is published.
+Release commits are published to Maven Central by CI after all validation jobs pass.
 
 Use Kotlin 2.4.21+ and Maven Central. Add to your shared module:
 
 ```kotlin
 kotlin {
     sourceSets.commonMain.dependencies {
-        implementation("dev.vladleesi:kmp-sharekit:0.3.1")
+        implementation("dev.vladleesi:kmp-sharekit:0.4.0")
     }
 }
 ```
@@ -58,6 +58,56 @@ fun ShareButton(text: String) {
 Plain Kotlin can call `ShareKit.shareText(text)` too; Compose is optional and is not a library dependency.
 
 `isSupported()` returns `true` on Android/iOS, checks Desktop MAIL support on JVM, and checks secure-context and Web Share availability in browsers. It checks capability, not host readiness, mail client configuration, user activation, permissions, or delivery.
+
+## Structured sharing (0.4.0)
+
+Use the common API when your UI needs results or separate URL/title fields:
+
+```kotlin
+val request = ShareRequest(text = "Check this out", url = "https://example.com")
+// Call directly from onClick, on the UI thread.
+ShareKit.share(request) { result ->
+    when (result) {
+        is ShareResult.Failed -> showError(result.reason)
+        ShareResult.Cancelled, ShareResult.CancelledOrUnavailable -> Unit
+        ShareResult.Launched, ShareResult.Completed -> Unit
+    }
+}
+```
+
+Import `ShareRequest`, `ShareResult`, and `ShareKit` from `dev.vladleesi.kmpsharekit`; `showError` is application code. `capabilities()` reports `NATIVE`, `EMAIL`, or `UNAVAILABLE`, plus `supportsTitle`. `canShare(request)` checks content and capability without a gesture, but does not guarantee a ready host, permissions, or a configured mail client. Always handle the result of `share` even after a positive check.
+
+Requests require nonblank text or an absolute HTTP(S) URL. URL parsing follows the platform parser; use encoded URLs with an ASCII hostname for portability. Title-only requests are invalid. Payload text is preserved. The legacy `shareText` methods retain their existing behavior, including handling empty strings.
+
+| Platform | Text and URL | Title | Result timing |
+| --- | --- | --- | --- |
+| Android | Joined with a newline in `EXTRA_TEXT` | `EXTRA_SUBJECT` and `EXTRA_TITLE`; recipients may ignore metadata | `Launched` immediately after starting the chooser |
+| iOS | Separate string and native URL activity items | Unsupported; returns `UNSUPPORTED_CONTENT` when supplied | Activity completion or cancellation |
+| JVM desktop | Joined with a newline in the email body | Email subject | `Launched` immediately after opening the composer |
+| Browser | Separate Web Share fields | Web Share title; targets may ignore it | Promise resolution or rejection |
+
+The callback receives one terminal result. Preflight errors are synchronous. Android and JVM cannot observe later cancellation or delivery. iOS and browsers report `Completed` only as a platform completion signal; it does not confirm delivery. Browser `AbortError` maps to `CancelledOrUnavailable`. Unexpected platform failures retain their cause, including browser error names. Exceptions thrown by your callback are not converted into sharing failures.
+
+New iOS and browser requests return `BUSY` while a prior new-API request is pending; Android and JVM requests can launch separate choosers/composers. Avoid mixing old and new calls concurrently. Callbacks use the platform callback thread (UI thread on iOS; browser event loop), or the calling thread for synchronous results. Calls from the wrong thread on Android/iOS report `WRONG_THREAD` without dispatching automatically.
+
+For multiple windows, use the Android overload `share(activity, request, onResult)` or iOS overload `share(request, presentingViewController, onResult)`. The core has no Compose or coroutine dependency and performs no automatic clipboard or email fallback.
+
+## Compatibility and fallback UX
+
+Support is determined at runtime, rather than from browser or OS names. A running JS app can receive `UNAVAILABLE` when Web Share is absent, including embedded browsers and insecure contexts. WasmJS still requires a compatible Wasm runtime; use a JS build when supporting browsers without Kotlin/Wasm support. JVM desktop requires the `java.desktop` module and reports unavailable sharing in headless environments. Kotlin/Native desktop targets remain outside the supported target set.
+
+Keep the content accessible even when sharing is unavailable. Offer an explicit Copy action if your app's clipboard API is supported, and a selectable text field when clipboard access is denied. These are app UI responsibilities; the core library has no UI dependency. For example:
+
+```kotlin
+ShareKit.share(request) { result ->
+    if (result is ShareResult.Failed) {
+        // Application-owned dialog with selectable content and an optional Copy button.
+        showSelectableText(listOfNotNull(request.text, request.url).joinToString("\n"))
+    }
+}
+```
+
+Do not interpret cancellation as an error or trigger a fallback automatically after cancellation. Browser and OS APIs can impose runtime restrictions even after a successful capability check. Native UI smoke checks on Safari/iOS, Android, Windows, macOS, and the supported Linux desktop environments complement automated tests; universal native UI availability is not promised.
 
 ## Platform setup
 

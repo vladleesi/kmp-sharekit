@@ -5,6 +5,63 @@ package dev.vladleesi.kmpsharekit
 import kotlin.js.js
 
 public actual object ShareKit {
+    private var sharing = false
+
+    public actual fun capabilities(): ShareCapabilities =
+        ShareCapabilities(if (isSupported()) ShareMethod.NATIVE else ShareMethod.UNAVAILABLE, true)
+
+    public actual fun canShare(request: ShareRequest): Boolean =
+        request.failure(capabilities()) == null && canShareInBrowser(request.text, request.url, request.title)
+
+    public actual fun share(
+        request: ShareRequest,
+        onResult: (ShareResult) -> Unit,
+    ) {
+        val failure =
+            request.failure(capabilities()) ?: when {
+                sharing -> ShareResult.Failed(ShareFailure.BUSY)
+                !hasUserActivation() -> ShareResult.Failed(ShareFailure.USER_ACTIVATION_REQUIRED)
+                !canShareInBrowser(request.text, request.url, request.title) -> ShareResult.Failed(ShareFailure.UNSUPPORTED_CONTENT)
+                else -> null
+            }
+        if (failure != null) {
+            onResult(failure)
+            return
+        }
+        sharing = true
+        var finished = false
+        val finish: (ShareResult) -> Unit = { result ->
+            if (!finished) {
+                finished = true
+                sharing = false
+                onResult(result)
+            }
+        }
+        shareRequestInBrowser(
+            request.text,
+            request.url,
+            request.title,
+            { finish(ShareResult.Completed) },
+            { name, message ->
+                finish(
+                    if (name == "AbortError") {
+                        ShareResult.CancelledOrUnavailable
+                    } else {
+                        ShareResult.Failed(
+                            when (name) {
+                                "NotAllowedError" -> ShareFailure.PERMISSION_DENIED
+                                "InvalidStateError" -> ShareFailure.BUSY
+                                "TypeError" -> ShareFailure.INVALID_REQUEST
+                                else -> ShareFailure.PLATFORM_ERROR
+                            },
+                            BrowserShareException(name, message),
+                        )
+                    },
+                )
+            },
+        )
+    }
+
     /** Checks secure-context and API availability, without requiring or consuming a user gesture. */
     public actual fun isSupported(): Boolean = isSecureContext() && hasWebShare()
 
@@ -89,3 +146,54 @@ private fun logShareError(
     name: String,
     message: String,
 ): Unit = js("console.error('ShareKit: ' + name + ': ' + message)")
+
+internal actual fun validShareUrl(url: String): Boolean =
+    js(
+        """{
+    try {
+        if (/\s/.test(url)) return false;
+        const parsed = new URL(url);
+        return /^https?:\/\//i.test(url) && (parsed.protocol === 'http:' || parsed.protocol === 'https:') && !!parsed.hostname;
+    } catch (_) { return false; }
+}""",
+    )
+
+private fun canShareInBrowser(
+    text: String?,
+    url: String?,
+    title: String?,
+): Boolean =
+    js(
+        """{
+    const data = {};
+    if (text !== null) data.text = text;
+    if (url !== null) data.url = url;
+    if (title !== null) data.title = title;
+    try { return typeof navigator.canShare !== 'function' || navigator.canShare(data); }
+    catch (_) { return false; }
+}""",
+    )
+
+private fun shareRequestInBrowser(
+    text: String?,
+    url: String?,
+    title: String?,
+    onSuccess: () -> Unit,
+    onError: (String, String) -> Unit,
+): Unit =
+    js(
+        """{
+    const data = {};
+    if (text !== null) data.text = text;
+    if (url !== null) data.url = url;
+    if (title !== null) data.title = title;
+    const failure = (error) => onError(
+        error && typeof error.name === 'string' ? error.name : 'Error',
+        error && typeof error.message === 'string' ? error.message : 'Browser sharing failed.'
+    );
+    let promise;
+    try { promise = navigator.share(data); }
+    catch (error) { failure(error); return; }
+    promise.then(() => onSuccess(), failure);
+}""",
+    )

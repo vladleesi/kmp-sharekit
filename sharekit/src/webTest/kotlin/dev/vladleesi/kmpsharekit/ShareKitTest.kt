@@ -16,6 +16,99 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class ShareKitTest {
+    @Test
+    fun newApiHandlesMissingNavigatorAndUnavailableSharingWithoutLaunching() {
+        removeNavigator()
+        assertEquals(ShareMethod.UNAVAILABLE, ShareKit.capabilities().method)
+        assertFalse(ShareKit.canShare(ShareRequest(text = "Hello")))
+        var calls = 0
+        ShareKit.share(ShareRequest(text = "Hello")) {
+            calls++
+            assertEquals(ShareFailure.UNAVAILABLE, (it as ShareResult.Failed).reason)
+        }
+        assertEquals(1, calls)
+        assertEquals(0, clipboardCalls())
+    }
+
+    @Test
+    fun handlesMissingOrRejectingCanShare() {
+        configureCanShare("missing")
+        assertTrue(ShareKit.canShare(ShareRequest(text = "Hello")))
+        configureCanShare("false")
+        assertFalse(ShareKit.canShare(ShareRequest(text = "Hello")))
+        ShareKit.share(ShareRequest(text = "Hello")) {
+            assertEquals(ShareFailure.UNSUPPORTED_CONTENT, (it as ShareResult.Failed).reason)
+        }
+        configureCanShare("throw")
+        assertFalse(ShareKit.canShare(ShareRequest(text = "Hello")))
+        assertEquals(0, shareCalls())
+    }
+
+    @Test
+    fun synchronousPermissionFailureReleasesThePendingRequest() {
+        setOutcome("throw", "NotAllowedError")
+        var calls = 0
+        repeat(2) {
+            ShareKit.share(ShareRequest(text = "Hi")) {
+                calls++
+                assertEquals(ShareFailure.PERMISSION_DENIED, (it as ShareResult.Failed).reason)
+                assertEquals("NotAllowedError", (it.cause as BrowserShareException).name)
+            }
+        }
+        assertEquals(2, calls)
+        assertEquals(2, shareCalls())
+    }
+
+    @Test
+    fun richRequestStartsImmediatelyAndReportsCompletion(): Promise<JsAny?> {
+        var result: ShareResult? = null
+        val request = ShareRequest("Hello", "https://example.com", "Title")
+        assertTrue(ShareKit.canShare(request))
+        ShareKit.share(request) { result = it }
+        assertEquals(1, shareCalls())
+        assertEquals("Hello", sharedText())
+        assertTrue(hasRichFields())
+        assertEquals(null, result)
+        return afterMicrotasks { assertEquals(ShareResult.Completed, result) }
+    }
+
+    @Test
+    fun newApiRejectsConcurrentRequestsAndRecoversAfterAbort(): Promise<JsAny?> {
+        setOutcome("pending", "")
+        var first: ShareResult? = null
+        ShareKit.share(ShareRequest(text = "First")) { first = it }
+        ShareKit.share(ShareRequest(text = "Second")) {
+            assertEquals(ShareFailure.BUSY, (it as ShareResult.Failed).reason)
+        }
+        assertEquals(1, shareCalls())
+        resolvePendingShare()
+        return afterMicrotasks { assertEquals(ShareResult.Completed, first) }
+    }
+
+    @Test
+    fun newApiPreservesAbortAmbiguity(): Promise<JsAny?> {
+        setOutcome("reject", "AbortError")
+        var result: ShareResult? = null
+        ShareKit.share(ShareRequest(text = "Hi")) { result = it }
+        return afterMicrotasks { assertEquals(ShareResult.CancelledOrUnavailable, result) }
+    }
+
+    @Test
+    fun canShareDoesNotRequireActivationAndPreflightDoesNotSwallowCallbackErrors() {
+        setActivation(false)
+        assertTrue(ShareKit.canShare(ShareRequest(text = "Hi")))
+        var calls = 0
+        assertFailsWith<IllegalArgumentException> {
+            ShareKit.share(ShareRequest(text = "Hi")) {
+                calls++
+                assertEquals(ShareFailure.USER_ACTIVATION_REQUIRED, (it as ShareResult.Failed).reason)
+                throw IllegalArgumentException("Caller")
+            }
+        }
+        assertEquals(1, calls)
+        assertEquals(0, shareCalls())
+    }
+
     @BeforeTest
     fun setUp() = installBrowser()
 
@@ -249,6 +342,7 @@ private fun installBrowser(): Unit =
             return Promise.resolve();
         };
         replace(nav, 'share', state.share);
+        replace(nav, 'canShare', () => true);
         }""",
     )
 
@@ -291,3 +385,16 @@ private fun sharedText(): String = js("globalThis.__shareKitTest.data.text")
 private fun hasOnlyText(): Boolean = js("Object.keys(globalThis.__shareKitTest.data).join() === 'text'")
 
 private fun afterMicrotasks(assertions: () -> Unit): Promise<JsAny?> = js("Promise.resolve().then(() => { assertions(); return null; })")
+
+private fun hasRichFields(): Boolean =
+    js("globalThis.__shareKitTest.data.url === 'https://example.com' && globalThis.__shareKitTest.data.title === 'Title'")
+
+private fun configureCanShare(mode: String): Unit =
+    js(
+        """{
+    navigator.canShare = mode === 'missing' ? undefined : () => {
+        if (mode === 'throw') throw new Error('Unavailable');
+        return false;
+    };
+}""",
+    )

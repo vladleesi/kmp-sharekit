@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0 — 2026-11-12
+
+- Restore automatic CI release dispatch after verified promotion, including GitHub tags/releases and Maven Central publication. Keep review checkpoints between releases.
+- Add common ShareRequest, ShareResult, ShareFailure, ShareCapabilities, and ShareMethod APIs.
+- Add share(request, onResult), capabilities(), and canShare(request), preserving all existing sharing signatures.
+- Support text and URL payloads on every platform, and optional title metadata on Android, JVM, and browsers; explicitly report unsupported iOS titles.
+- Report platform launch/completion, cancellation, ambiguous browser aborts, and typed failures. Guard overlapping iOS/browser requests and support explicit mobile presentation hosts.
+- Extend platform tests, publication consumer coverage, API baselines, and migration documentation. Run JS and WasmJS tests in both Chrome and Firefox and cover missing/denied browser APIs.
+
 ## 0.3.1 — pending review
 
 - Fix browser CI failing on stale npm workspace versions; add an early version consistency check.

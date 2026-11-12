@@ -8,6 +8,18 @@ import java.net.URLEncoder
 public actual object ShareKit {
     private val sharing = DesktopSharing()
 
+    public actual fun capabilities(): ShareCapabilities =
+        ShareCapabilities(if (isSupported()) ShareMethod.EMAIL else ShareMethod.UNAVAILABLE, true)
+
+    public actual fun canShare(request: ShareRequest): Boolean = request.failure(capabilities()) == null
+
+    public actual fun share(
+        request: ShareRequest,
+        onResult: (ShareResult) -> Unit,
+    ) {
+        sharing.share(request, onResult)
+    }
+
     /** Checks desktop MAIL support. A configured mail client is still required to share. */
     public actual fun isSupported(): Boolean = sharing.isSupported()
 
@@ -32,6 +44,22 @@ internal class DesktopSharing(
             false
         }
 
+    fun share(
+        request: ShareRequest,
+        onResult: (ShareResult) -> Unit,
+    ) {
+        val capabilities = ShareCapabilities(if (isSupported()) ShareMethod.EMAIL else ShareMethod.UNAVAILABLE, true)
+        val failure = request.failure(capabilities)
+        if (failure != null) {
+            onResult(failure)
+            return
+        }
+        val body = URLEncoder.encode(request.textWithUrl(), "UTF-8").replace("+", "%20")
+        val subject = request.title?.let { "&subject=" + URLEncoder.encode(it, "UTF-8").replace("+", "%20") } ?: ""
+        val result = shareAttempt { mail(URI.create("mailto:?body=$body$subject")) }
+        onResult(result)
+    }
+
     fun shareText(text: String) {
         if (!isSupported()) {
             throw UnsupportedOperationException(
@@ -50,3 +78,24 @@ internal class DesktopSharing(
         }
     }
 }
+
+internal actual fun validShareUrl(url: String): Boolean =
+    try {
+        val uri = URI(url)
+        uri.scheme?.lowercase() in listOf("http", "https") && !uri.host.isNullOrEmpty()
+    } catch (_: Exception) {
+        false
+    }
+
+// Invoke user code outside platform try/catch blocks so callback exceptions are never reported twice.
+internal fun shareAttempt(block: () -> Unit): ShareResult =
+    try {
+        block()
+        ShareResult.Launched
+    } catch (error: SecurityException) {
+        ShareResult.Failed(ShareFailure.PERMISSION_DENIED, error)
+    } catch (error: UnsupportedOperationException) {
+        ShareResult.Failed(ShareFailure.UNAVAILABLE, error)
+    } catch (error: Exception) {
+        ShareResult.Failed(ShareFailure.PLATFORM_ERROR, error)
+    }

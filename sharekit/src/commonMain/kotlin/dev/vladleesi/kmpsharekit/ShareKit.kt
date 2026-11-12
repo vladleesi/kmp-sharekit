@@ -2,6 +2,23 @@ package dev.vladleesi.kmpsharekit
 
 /** Plain-text sharing. Call [shareText] from the UI thread or a browser user gesture. */
 public expect object ShareKit {
+    /** Reports the sharing method and supported request fields without opening UI. */
+    public fun capabilities(): ShareCapabilities
+
+    /** Checks request validity and capability, without requiring a host or user gesture. */
+    public fun canShare(request: ShareRequest): Boolean
+
+    /**
+     * Starts sharing immediately. Call on the UI thread or directly within a browser user gesture.
+     * Preflight errors are delivered synchronously. Android/JVM report launch synchronously;
+     * iOS/browser report the later platform outcome. The callback receives one terminal result.
+     * User callback exceptions propagate; no implicit clipboard or email fallback is performed.
+     */
+    public fun share(
+        request: ShareRequest,
+        onResult: (ShareResult) -> Unit,
+    )
+
     /**
      * Reports whether the platform supports text sharing, without opening sharing UI.
      *

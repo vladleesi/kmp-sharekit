@@ -1,12 +1,12 @@
 # Contributing
 
-Open an issue for bugs or proposed API changes. Branch from `develop` and target all contributor pull requests at `develop`. Keep changes focused, describe the behavior change, and add tests when behavior changes. CI promotes verified `develop` commits to the protected `master` branch. Releases require explicit maintainer review and a confirmed manual dispatch. See [ROADMAP.md](ROADMAP.md).
+Open an issue for bugs or proposed API changes. Branch from `develop` and target all contributor pull requests at `develop`. Keep changes focused, describe the behavior change, and add tests when behavior changes. CI promotes verified `develop` commits to the protected `master` branch. Approved release commits are published automatically through CI. Wait for maintainer review after each release before starting the next milestone. See [ROADMAP.md](ROADMAP.md).
 
 ## Development
 
 Use JDK 21, Android SDK Platform 37, and SDK Build Tools 36.0.0. Set `ANDROID_HOME` or `sdk.dir` in the ignored `local.properties`. Apple builds and simulator tests require macOS with Xcode and an installed iOS simulator runtime. Use an Apple Silicon Mac to run `iosSimulatorArm64Test`.
 
-Browser tests require Node.js 24 LTS/npm on `PATH` and Chrome (`CHROME_BIN` if needed). Gradle uses the installed Node.js; commit `kotlin-js-store` lockfiles when updating tooling. The webpack pin keeps Karma and its plugins compatible.
+Browser tests require Node.js 24 LTS/npm on `PATH` and Chrome/Firefox (`CHROME_BIN` and `FIREFOX_BIN` if needed). Gradle uses the installed Node.js; commit `kotlin-js-store` lockfiles when updating tooling. The webpack pin keeps Karma and its plugins compatible.
 
 The toolchain uses Kotlin 2.4.21, AGP 9.3.1, and Gradle 9.7.0, within Kotlin's [fully supported compatibility range](https://kotlinlang.org/docs/gradle-configure-project.html). The wrapper verifies the Gradle distribution checksum.
 
@@ -17,7 +17,7 @@ The toolchain uses Kotlin 2.4.21, AGP 9.3.1, and Gradle 9.7.0, within Kotlin's [
 # All desktop hosts: JVM tests and library JAR
 ./gradlew :sharekit:jvmTest :sharekit:jvmJar
 
-# Browser tests: run the shared webTest suite on both JS and WasmJS in headless Chrome
+# Browser tests: run the shared webTest suite on both JS and WasmJS in headless Chrome and Firefox
 ./gradlew :sharekit:jsBrowserTest :sharekit:wasmJsBrowserTest
 
 # macOS: compile every Apple target, link frameworks, and run simulator tests
@@ -60,9 +60,9 @@ For releases, verify the `dev.vladleesi` namespace in [Central Portal](https://c
 
 Publish the corresponding public key to a public keyserver and keep a secure backup of the private key. Local signing can use the publisher's [in-memory signing properties](https://vanniktech.github.io/gradle-maven-publish-plugin/central/#secrets) through environment variables or private user Gradle properties. Never put credentials in this repository or logs.
 
-After Android, desktop, browser, and Apple CI checks pass on `develop`, CI fast-forwards `master` to that exact commit and stops there for maintainer review. It never force-pushes or overwrites divergent history. A newer `develop` commit supersedes an older run awaiting promotion.
+After Android, desktop, browser, and Apple CI checks pass on `develop`, CI fast-forwards `master` to that exact commit and starts the Release workflow there. It never force-pushes or overwrites divergent history. A newer `develop` commit supersedes an older run awaiting promotion.
 
-After explicit approval, manually dispatch Release on `master` with the reviewed commit SHA and `confirm=true`. The Release workflow verifies the master commit, reruns validation, creates `v<version>` and a stable GitHub release, then signs and publishes to Maven Central. A version already tagged at an older commit is skipped until `VERSION_NAME` is bumped. To retry a failed release, rerun its failed jobs or dispatch Release on `master` with the original commit SHA and explicit confirmation. Central versions are immutable; do not republish a successful version.
+The automatically dispatched Release workflow verifies the master commit, reruns validation, creates `v<version>` and a stable GitHub release, then signs and publishes to Maven Central. A version already tagged at an older commit is skipped until `VERSION_NAME` is bumped. To retry a failed release, rerun its failed jobs or dispatch Release on `master` with the original commit SHA and explicit confirmation. Central versions are immutable; do not republish a successful version.
 
 ## API and consumer checks
 

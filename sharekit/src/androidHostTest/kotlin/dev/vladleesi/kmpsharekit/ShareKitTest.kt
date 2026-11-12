@@ -18,6 +18,38 @@ import kotlin.test.assertTrue
 @Config(sdk = [23, 37])
 class ShareKitTest {
     @Test
+    fun richRequestUsesAndroidMetadataAndReportsLaunch() {
+        Robolectric.buildActivity(Activity::class.java).setup().use { controller ->
+            var result: ShareResult? = null
+            ShareKit.share(controller.get(), ShareRequest("Hello", "https://example.com", "Title")) { result = it }
+            assertEquals(ShareResult.Launched, result)
+            val chooser = assertNotNull(shadowOf(controller.get()).nextStartedActivity)
+
+            @Suppress("DEPRECATION")
+            val send = assertNotNull(chooser.getParcelableExtra<Intent>(Intent.EXTRA_INTENT))
+            assertEquals("Hello\nhttps://example.com", send.getStringExtra(Intent.EXTRA_TEXT))
+            assertEquals("Title", send.getStringExtra(Intent.EXTRA_SUBJECT))
+            assertEquals("Title", send.getStringExtra(Intent.EXTRA_TITLE))
+        }
+    }
+
+    @Test
+    fun newApiReportsDestroyedHostAndDoesNotCatchCallerExceptions() {
+        Robolectric.buildActivity(Activity::class.java).setup().use { controller ->
+            controller.get().finish()
+            var calls = 0
+            assertFailsWith<IllegalArgumentException> {
+                ShareKit.share(controller.get(), ShareRequest(text = "Hi")) {
+                    calls++
+                    assertEquals(ShareFailure.HOST_UNAVAILABLE, (it as ShareResult.Failed).reason)
+                    throw IllegalArgumentException("Caller")
+                }
+            }
+            assertEquals(1, calls)
+        }
+    }
+
+    @Test
     fun sharesPlainTextInAChooserWithoutChangingThePayload() {
         Robolectric.buildActivity(Activity::class.java).setup().use { controller ->
             val activity = controller.get()

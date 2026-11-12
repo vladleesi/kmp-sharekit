@@ -89,9 +89,10 @@ jobs:
           cache-provider: basic
       - name: Check release and npm lockfile versions
         run: python3 .github/scripts/check-release-version.py
-      - name: Test JS and WasmJS in Chrome
+      - name: Test JS and WasmJS in Chrome and Firefox
         env:
           CHROME_BIN: /usr/bin/google-chrome
+          FIREFOX_BIN: /usr/bin/firefox
         run: ./gradlew :sharekit:jsBrowserTest :sharekit:wasmJsBrowserTest --stacktrace
 
   apple:
@@ -132,6 +133,7 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: write
+      actions: write
     concurrency:
       group: promote-master
       cancel-in-progress: false
@@ -153,3 +155,17 @@ jobs:
           git merge-base --is-ancestor origin/master "$GITHUB_SHA"
           git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin "$GITHUB_SHA:refs/heads/master"
           echo 'promoted=true' >> "$GITHUB_OUTPUT"
+      - name: Start the release workflow on master
+        if: steps.promote.outputs.promoted == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # A newly promoted workflow can take a moment to appear in the Actions API.
+          for attempt in 1 2 3 4 5 6; do
+            if gh workflow run release.yml --ref master --field sha="$GITHUB_SHA" --field confirm=true; then
+              exit 0
+            fi
+            echo "Waiting for release workflow registration (attempt $attempt)."
+            sleep 5
+          done
+          exit 1

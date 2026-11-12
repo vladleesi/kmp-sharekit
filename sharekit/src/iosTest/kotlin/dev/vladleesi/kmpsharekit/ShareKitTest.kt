@@ -22,6 +22,33 @@ import kotlin.test.assertNotNull
 
 class ShareKitTest {
     @Test
+    fun requestCompletionIsReportedOnlyOnce() {
+        val results = mutableListOf<ShareResult>()
+        val sheet = requestActivityViewController(ShareRequest(url = "https://example.com"), UIViewController()) { results += it }
+        val completion = assertNotNull(sheet.completionWithItemsHandler)
+        completion(null, true, null, null)
+        completion(null, false, null, null)
+        assertEquals(listOf<ShareResult>(ShareResult.Completed), results)
+    }
+
+    @Test
+    fun requestCancellationIsObservable() {
+        var result: ShareResult? = null
+        val sheet = requestActivityViewController(ShareRequest(text = "Hi"), UIViewController()) { result = it }
+        assertNotNull(sheet.completionWithItemsHandler)(null, false, null, null)
+        assertEquals(ShareResult.Cancelled, result)
+    }
+
+    @Test
+    fun rejectsUnsupportedTitleAndMissingHost() {
+        var result: ShareResult? = null
+        ShareKit.share(ShareRequest(text = "Hi", title = "Title"), UIViewController()) { result = it }
+        assertEquals(ShareFailure.UNSUPPORTED_CONTENT, (result as ShareResult.Failed).reason)
+        ShareKit.share(ShareRequest(text = "Hi"), UIViewController()) { result = it }
+        assertEquals(ShareFailure.HOST_UNAVAILABLE, (result as ShareResult.Failed).reason)
+    }
+
+    @Test
     fun findsTheVisibleControllerInsideNavigationAndTabs() {
         val first = UIViewController()
         val selected = UIViewController()

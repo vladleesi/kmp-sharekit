@@ -1,6 +1,8 @@
 name: Release
 
 on:
+  push:
+    branches: [master]
   workflow_dispatch:
     inputs:
       sha:
@@ -22,7 +24,7 @@ concurrency:
 
 jobs:
   version:
-    if: github.repository == 'vladleesi/kmp-sharekit' && github.ref == 'refs/heads/master' && github.event_name == 'workflow_dispatch' && inputs.confirm
+    if: github.repository == 'vladleesi/kmp-sharekit' && github.ref == 'refs/heads/master' && (github.event_name != 'workflow_dispatch' || inputs.confirm)
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
@@ -64,6 +66,7 @@ jobs:
     # The reused CI declares a promotion job; its branch guard skips it on master.
     permissions:
       contents: write
+      actions: write
     uses: ./.github/workflows/ci.yml
     with:
       ref: ${{ needs.version.outputs.sha }}

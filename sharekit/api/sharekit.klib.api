@@ -7,9 +7,122 @@
 // - Show declarations: true
 
 // Library unique name: <dev.vladleesi:sharekit>
+final enum class dev.vladleesi.kmpsharekit/ShareFailure : kotlin/Enum<dev.vladleesi.kmpsharekit/ShareFailure> { // dev.vladleesi.kmpsharekit/ShareFailure|null[0]
+    enum entry BUSY // dev.vladleesi.kmpsharekit/ShareFailure.BUSY|null[0]
+    enum entry HOST_UNAVAILABLE // dev.vladleesi.kmpsharekit/ShareFailure.HOST_UNAVAILABLE|null[0]
+    enum entry INVALID_REQUEST // dev.vladleesi.kmpsharekit/ShareFailure.INVALID_REQUEST|null[0]
+    enum entry PERMISSION_DENIED // dev.vladleesi.kmpsharekit/ShareFailure.PERMISSION_DENIED|null[0]
+    enum entry PLATFORM_ERROR // dev.vladleesi.kmpsharekit/ShareFailure.PLATFORM_ERROR|null[0]
+    enum entry UNAVAILABLE // dev.vladleesi.kmpsharekit/ShareFailure.UNAVAILABLE|null[0]
+    enum entry UNSUPPORTED_CONTENT // dev.vladleesi.kmpsharekit/ShareFailure.UNSUPPORTED_CONTENT|null[0]
+    enum entry USER_ACTIVATION_REQUIRED // dev.vladleesi.kmpsharekit/ShareFailure.USER_ACTIVATION_REQUIRED|null[0]
+    enum entry WRONG_THREAD // dev.vladleesi.kmpsharekit/ShareFailure.WRONG_THREAD|null[0]
+
+    final val entries // dev.vladleesi.kmpsharekit/ShareFailure.entries|#static{}entries[0]
+        final fun <get-entries>(): kotlin.enums/EnumEntries<dev.vladleesi.kmpsharekit/ShareFailure> // dev.vladleesi.kmpsharekit/ShareFailure.entries.<get-entries>|<get-entries>#static(){}[0]
+
+    final fun valueOf(kotlin/String): dev.vladleesi.kmpsharekit/ShareFailure // dev.vladleesi.kmpsharekit/ShareFailure.valueOf|valueOf#static(kotlin.String){}[0]
+    final fun values(): kotlin/Array<dev.vladleesi.kmpsharekit/ShareFailure> // dev.vladleesi.kmpsharekit/ShareFailure.values|values#static(){}[0]
+}
+
+final enum class dev.vladleesi.kmpsharekit/ShareMethod : kotlin/Enum<dev.vladleesi.kmpsharekit/ShareMethod> { // dev.vladleesi.kmpsharekit/ShareMethod|null[0]
+    enum entry EMAIL // dev.vladleesi.kmpsharekit/ShareMethod.EMAIL|null[0]
+    enum entry NATIVE // dev.vladleesi.kmpsharekit/ShareMethod.NATIVE|null[0]
+    enum entry UNAVAILABLE // dev.vladleesi.kmpsharekit/ShareMethod.UNAVAILABLE|null[0]
+
+    final val entries // dev.vladleesi.kmpsharekit/ShareMethod.entries|#static{}entries[0]
+        final fun <get-entries>(): kotlin.enums/EnumEntries<dev.vladleesi.kmpsharekit/ShareMethod> // dev.vladleesi.kmpsharekit/ShareMethod.entries.<get-entries>|<get-entries>#static(){}[0]
+
+    final fun valueOf(kotlin/String): dev.vladleesi.kmpsharekit/ShareMethod // dev.vladleesi.kmpsharekit/ShareMethod.valueOf|valueOf#static(kotlin.String){}[0]
+    final fun values(): kotlin/Array<dev.vladleesi.kmpsharekit/ShareMethod> // dev.vladleesi.kmpsharekit/ShareMethod.values|values#static(){}[0]
+}
+
+sealed interface dev.vladleesi.kmpsharekit/ShareResult { // dev.vladleesi.kmpsharekit/ShareResult|null[0]
+    final class Failed : dev.vladleesi.kmpsharekit/ShareResult { // dev.vladleesi.kmpsharekit/ShareResult.Failed|null[0]
+        constructor <init>(dev.vladleesi.kmpsharekit/ShareFailure, kotlin/Throwable? = ...) // dev.vladleesi.kmpsharekit/ShareResult.Failed.<init>|<init>(dev.vladleesi.kmpsharekit.ShareFailure;kotlin.Throwable?){}[0]
+
+        final val cause // dev.vladleesi.kmpsharekit/ShareResult.Failed.cause|{}cause[0]
+            final fun <get-cause>(): kotlin/Throwable? // dev.vladleesi.kmpsharekit/ShareResult.Failed.cause.<get-cause>|<get-cause>(){}[0]
+        final val reason // dev.vladleesi.kmpsharekit/ShareResult.Failed.reason|{}reason[0]
+            final fun <get-reason>(): dev.vladleesi.kmpsharekit/ShareFailure // dev.vladleesi.kmpsharekit/ShareResult.Failed.reason.<get-reason>|<get-reason>(){}[0]
+
+        final fun component1(): dev.vladleesi.kmpsharekit/ShareFailure // dev.vladleesi.kmpsharekit/ShareResult.Failed.component1|component1(){}[0]
+        final fun component2(): kotlin/Throwable? // dev.vladleesi.kmpsharekit/ShareResult.Failed.component2|component2(){}[0]
+        final fun copy(dev.vladleesi.kmpsharekit/ShareFailure = ..., kotlin/Throwable? = ...): dev.vladleesi.kmpsharekit/ShareResult.Failed // dev.vladleesi.kmpsharekit/ShareResult.Failed.copy|copy(dev.vladleesi.kmpsharekit.ShareFailure;kotlin.Throwable?){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // dev.vladleesi.kmpsharekit/ShareResult.Failed.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // dev.vladleesi.kmpsharekit/ShareResult.Failed.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // dev.vladleesi.kmpsharekit/ShareResult.Failed.toString|toString(){}[0]
+    }
+
+    final object Cancelled : dev.vladleesi.kmpsharekit/ShareResult { // dev.vladleesi.kmpsharekit/ShareResult.Cancelled|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // dev.vladleesi.kmpsharekit/ShareResult.Cancelled.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // dev.vladleesi.kmpsharekit/ShareResult.Cancelled.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // dev.vladleesi.kmpsharekit/ShareResult.Cancelled.toString|toString(){}[0]
+    }
+
+    final object CancelledOrUnavailable : dev.vladleesi.kmpsharekit/ShareResult { // dev.vladleesi.kmpsharekit/ShareResult.CancelledOrUnavailable|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // dev.vladleesi.kmpsharekit/ShareResult.CancelledOrUnavailable.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // dev.vladleesi.kmpsharekit/ShareResult.CancelledOrUnavailable.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // dev.vladleesi.kmpsharekit/ShareResult.CancelledOrUnavailable.toString|toString(){}[0]
+    }
+
+    final object Completed : dev.vladleesi.kmpsharekit/ShareResult { // dev.vladleesi.kmpsharekit/ShareResult.Completed|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // dev.vladleesi.kmpsharekit/ShareResult.Completed.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // dev.vladleesi.kmpsharekit/ShareResult.Completed.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // dev.vladleesi.kmpsharekit/ShareResult.Completed.toString|toString(){}[0]
+    }
+
+    final object Launched : dev.vladleesi.kmpsharekit/ShareResult { // dev.vladleesi.kmpsharekit/ShareResult.Launched|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // dev.vladleesi.kmpsharekit/ShareResult.Launched.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // dev.vladleesi.kmpsharekit/ShareResult.Launched.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // dev.vladleesi.kmpsharekit/ShareResult.Launched.toString|toString(){}[0]
+    }
+}
+
+final class dev.vladleesi.kmpsharekit/ShareCapabilities { // dev.vladleesi.kmpsharekit/ShareCapabilities|null[0]
+    constructor <init>(dev.vladleesi.kmpsharekit/ShareMethod, kotlin/Boolean) // dev.vladleesi.kmpsharekit/ShareCapabilities.<init>|<init>(dev.vladleesi.kmpsharekit.ShareMethod;kotlin.Boolean){}[0]
+
+    final val method // dev.vladleesi.kmpsharekit/ShareCapabilities.method|{}method[0]
+        final fun <get-method>(): dev.vladleesi.kmpsharekit/ShareMethod // dev.vladleesi.kmpsharekit/ShareCapabilities.method.<get-method>|<get-method>(){}[0]
+    final val supportsTitle // dev.vladleesi.kmpsharekit/ShareCapabilities.supportsTitle|{}supportsTitle[0]
+        final fun <get-supportsTitle>(): kotlin/Boolean // dev.vladleesi.kmpsharekit/ShareCapabilities.supportsTitle.<get-supportsTitle>|<get-supportsTitle>(){}[0]
+
+    final fun component1(): dev.vladleesi.kmpsharekit/ShareMethod // dev.vladleesi.kmpsharekit/ShareCapabilities.component1|component1(){}[0]
+    final fun component2(): kotlin/Boolean // dev.vladleesi.kmpsharekit/ShareCapabilities.component2|component2(){}[0]
+    final fun copy(dev.vladleesi.kmpsharekit/ShareMethod = ..., kotlin/Boolean = ...): dev.vladleesi.kmpsharekit/ShareCapabilities // dev.vladleesi.kmpsharekit/ShareCapabilities.copy|copy(dev.vladleesi.kmpsharekit.ShareMethod;kotlin.Boolean){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // dev.vladleesi.kmpsharekit/ShareCapabilities.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // dev.vladleesi.kmpsharekit/ShareCapabilities.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // dev.vladleesi.kmpsharekit/ShareCapabilities.toString|toString(){}[0]
+}
+
+final class dev.vladleesi.kmpsharekit/ShareRequest { // dev.vladleesi.kmpsharekit/ShareRequest|null[0]
+    constructor <init>(kotlin/String? = ..., kotlin/String? = ..., kotlin/String? = ...) // dev.vladleesi.kmpsharekit/ShareRequest.<init>|<init>(kotlin.String?;kotlin.String?;kotlin.String?){}[0]
+
+    final val text // dev.vladleesi.kmpsharekit/ShareRequest.text|{}text[0]
+        final fun <get-text>(): kotlin/String? // dev.vladleesi.kmpsharekit/ShareRequest.text.<get-text>|<get-text>(){}[0]
+    final val title // dev.vladleesi.kmpsharekit/ShareRequest.title|{}title[0]
+        final fun <get-title>(): kotlin/String? // dev.vladleesi.kmpsharekit/ShareRequest.title.<get-title>|<get-title>(){}[0]
+    final val url // dev.vladleesi.kmpsharekit/ShareRequest.url|{}url[0]
+        final fun <get-url>(): kotlin/String? // dev.vladleesi.kmpsharekit/ShareRequest.url.<get-url>|<get-url>(){}[0]
+
+    final fun component1(): kotlin/String? // dev.vladleesi.kmpsharekit/ShareRequest.component1|component1(){}[0]
+    final fun component2(): kotlin/String? // dev.vladleesi.kmpsharekit/ShareRequest.component2|component2(){}[0]
+    final fun component3(): kotlin/String? // dev.vladleesi.kmpsharekit/ShareRequest.component3|component3(){}[0]
+    final fun copy(kotlin/String? = ..., kotlin/String? = ..., kotlin/String? = ...): dev.vladleesi.kmpsharekit/ShareRequest // dev.vladleesi.kmpsharekit/ShareRequest.copy|copy(kotlin.String?;kotlin.String?;kotlin.String?){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // dev.vladleesi.kmpsharekit/ShareRequest.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // dev.vladleesi.kmpsharekit/ShareRequest.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // dev.vladleesi.kmpsharekit/ShareRequest.toString|toString(){}[0]
+}
+
 final object dev.vladleesi.kmpsharekit/ShareKit { // dev.vladleesi.kmpsharekit/ShareKit|null[0]
+    final fun canShare(dev.vladleesi.kmpsharekit/ShareRequest): kotlin/Boolean // dev.vladleesi.kmpsharekit/ShareKit.canShare|canShare(dev.vladleesi.kmpsharekit.ShareRequest){}[0]
+    final fun capabilities(): dev.vladleesi.kmpsharekit/ShareCapabilities // dev.vladleesi.kmpsharekit/ShareKit.capabilities|capabilities(){}[0]
     final fun isSupported(): kotlin/Boolean // dev.vladleesi.kmpsharekit/ShareKit.isSupported|isSupported(){}[0]
+    final fun share(dev.vladleesi.kmpsharekit/ShareRequest, kotlin/Function1<dev.vladleesi.kmpsharekit/ShareResult, kotlin/Unit>) // dev.vladleesi.kmpsharekit/ShareKit.share|share(dev.vladleesi.kmpsharekit.ShareRequest;kotlin.Function1<dev.vladleesi.kmpsharekit.ShareResult,kotlin.Unit>){}[0]
     final fun shareText(kotlin/String) // dev.vladleesi.kmpsharekit/ShareKit.shareText|shareText(kotlin.String){}[0]
+
+    // Targets: [ios]
+    final fun share(dev.vladleesi.kmpsharekit/ShareRequest, platform.UIKit/UIViewController, kotlin/Function1<dev.vladleesi.kmpsharekit/ShareResult, kotlin/Unit>) // dev.vladleesi.kmpsharekit/ShareKit.share|share(dev.vladleesi.kmpsharekit.ShareRequest;platform.UIKit.UIViewController;kotlin.Function1<dev.vladleesi.kmpsharekit.ShareResult,kotlin.Unit>){}[0]
 
     // Targets: [ios]
     final fun shareText(kotlin/String, platform.UIKit/UIViewController) // dev.vladleesi.kmpsharekit/ShareKit.shareText|shareText(kotlin.String;platform.UIKit.UIViewController){}[0]

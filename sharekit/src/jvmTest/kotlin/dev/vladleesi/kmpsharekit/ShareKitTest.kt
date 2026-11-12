@@ -13,6 +13,37 @@ import kotlin.test.assertTrue
 
 class ShareKitTest {
     @Test
+    fun richRequestUsesOnlyBodyAndSubjectAndReportsLaunch() {
+        var opened: URI? = null
+        val sharing = DesktopSharing(canMail = { true }, mail = { opened = it })
+        var outcome: ShareResult? = null
+        sharing.share(ShareRequest("Hello 🌍", "https://example.com/a?x=1&y=2", "Subject &bcc=x")) { outcome = it }
+        assertEquals(ShareResult.Launched, outcome)
+        val fields =
+            checkNotNull(opened).rawSchemeSpecificPart.removePrefix("?").split('&').associate {
+                val parts = it.split('=', limit = 2)
+                parts[0] to URLDecoder.decode(parts[1], "UTF-8")
+            }
+        assertEquals(mapOf("body" to "Hello 🌍\nhttps://example.com/a?x=1&y=2", "subject" to "Subject &bcc=x"), fields)
+    }
+
+    @Test
+    fun newApiReportsFailureOnceAndPropagatesCallbackExceptions() {
+        var calls = 0
+        val error = IOException("No client")
+        val sharing = DesktopSharing(canMail = { true }, mail = { throw error })
+        sharing.share(ShareRequest(text = "Hi")) {
+            calls++
+            assertSame(error, (it as ShareResult.Failed).cause)
+            assertEquals(ShareFailure.PLATFORM_ERROR, it.reason)
+        }
+        assertEquals(1, calls)
+        assertFailsWith<IllegalArgumentException> {
+            sharing.share(ShareRequest(text = "Hi")) { throw IllegalArgumentException("Caller") }
+        }
+    }
+
+    @Test
     fun opensAMailDraftWithTheOriginalTextAsItsOnlyField() {
         var opened: URI? = null
         val sharing = DesktopSharing(canMail = { true }, mail = { opened = it })
