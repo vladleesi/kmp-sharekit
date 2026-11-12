@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0 — 2026-11-12
+
+- Add a JVM desktop target for macOS, Windows, and Linux using Java Desktop MAIL to open an email draft with the shared text. Requires a graphical desktop with MAIL support and a configured mail client; does not send email or copy text automatically.
+- Add desktop capability checks, URI encoding and failure tests, CI on all three desktop operating systems, and validation of the JVM Maven publication.
+
 ## 0.2.0 — 2026-11-02
 
 - Add Kotlin/JS and Kotlin/WasmJS browser targets with native text sharing through the Web Share API. WASI is not supported.

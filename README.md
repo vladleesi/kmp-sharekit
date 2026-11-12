@@ -2,7 +2,7 @@
 
 Lightweight native text sharing for Kotlin Multiplatform and Compose Multiplatform.
 
-[![Version](https://img.shields.io/badge/version-0.2.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.3.0-blue)](CHANGELOG.md)
 [![Build](https://github.com/vladleesi/kmp-sharekit/actions/workflows/ci.yml/badge.svg)](https://github.com/vladleesi/kmp-sharekit/actions/workflows/ci.yml)
 [![Maven Central](https://img.shields.io/maven-central/v/dev.vladleesi/kmp-sharekit)](https://central.sonatype.com/artifact/dev.vladleesi/kmp-sharekit)
 [![License](https://img.shields.io/badge/license-Apache_2.0-blue)](LICENSE)
@@ -13,9 +13,10 @@ Lightweight native text sharing for Kotlin Multiplatform and Compose Multiplatfo
 | --- | --- | --- |
 | `android` | Native share sheet | Android 21+; register the current Activity |
 | `iosArm64`, `iosSimulatorArm64`, `iosX64` | Native share sheet, including iPad | iOS 15+; a visible view controller |
+| `jvm` (desktop) | Email draft in the default mail client | Graphical desktop with Java Desktop MAIL support and a configured mail client |
 | `js`, `wasmJs` with `browser()` | Browser's native share UI | Web Share support, a secure context, and a user gesture |
 
-Browser sharing works on supported **desktop and mobile browsers**, not every browser. WasmJS also requires [Kotlin/Wasm browser support](https://kotlinlang.org/docs/wasm-configuration.html). Native JVM/Desktop and WASI targets are unsupported.
+JVM desktop supports Compose Multiplatform apps on macOS, Windows, and Linux where the runtime provides Desktop MAIL support. Browser sharing works on supported **desktop and mobile browsers**, not every browser. WasmJS also requires [Kotlin/Wasm browser support](https://kotlinlang.org/docs/wasm-configuration.html). Kotlin/Native desktop and WASI targets are unsupported.
 
 ## Installation
 
@@ -24,7 +25,7 @@ Use Kotlin 2.4.21+ and Maven Central. Add to your shared module:
 ```kotlin
 kotlin {
     sourceSets.commonMain.dependencies {
-        implementation("dev.vladleesi:kmp-sharekit:0.2.0")
+        implementation("dev.vladleesi:kmp-sharekit:0.3.0")
     }
 }
 ```
@@ -33,7 +34,7 @@ Use `commonMain` when all your targets are supported. Projects with unsupported 
 
 ## Shared usage
 
-Both `isSupported()` and `shareText()` are available in **`commonMain`** for Android, iOS, JS, and WasmJS. For example, in Compose Multiplatform:
+Both `isSupported()` and `shareText()` are available in **`commonMain`** for Android, iOS, JVM desktop, JS, and WasmJS. For example, in Compose Multiplatform:
 
 ```kotlin
 import androidx.compose.material.Button
@@ -54,7 +55,7 @@ fun ShareButton(text: String) {
 
 Plain Kotlin can call `ShareKit.shareText(text)` too; Compose is optional and is not a library dependency.
 
-`isSupported()` returns `true` on Android/iOS and checks secure-context and Web Share availability in browsers. It checks capability, not host readiness, user activation, permissions, or delivery.
+`isSupported()` returns `true` on Android/iOS, checks Desktop MAIL support on JVM, and checks secure-context and Web Share availability in browsers. It checks capability, not host readiness, mail client configuration, user activation, permissions, or delivery.
 
 ## Platform setup
 
@@ -70,6 +71,10 @@ override fun onResume() {
 ShareKit keeps a weak reference. Alternatively, use `ShareKit.shareText(activity, text)` directly.
 
 **iOS:** no registration is needed with a visible view controller, including `ComposeUIViewController`. Sharing runs on the main thread and anchors the sheet for iPad. For a specific window, use `ShareKit.shareText(text, presentingViewController = controller)`.
+
+**JVM desktop:** enable `jvm()` or a named JVM target such as `jvm("desktop")` in your KMP module. No registration or additional dependencies are needed. `ShareKit.shareText(text)` opens an email draft with the text in its body through [Java Desktop MAIL](https://docs.oracle.com/en/java/javase/21/docs/api/java.desktop/java/awt/Desktop.html#mail(java.net.URI)). The user chooses recipients and sends it. This is an email composer; the JVM does not provide a portable system share sheet.
+
+Headless environments and desktops without MAIL support return `false` from `isSupported()` and throw `UnsupportedOperationException` when sharing. A supported desktop can still fail to launch a configured client; launch failures throw `IllegalStateException` with the original cause. Mail clients may limit payload length or normalize line endings. Custom runtime images must include the `java.desktop` module. ShareKit never copies text automatically.
 
 **Web:** enable `js { browser() }` and/or `wasmJs { browser() }` in your KMP module. Call sharing directly from `onClick` or a click/tap handler, before deferred coroutine or network work.
 

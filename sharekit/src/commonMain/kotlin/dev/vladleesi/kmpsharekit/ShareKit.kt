@@ -1,11 +1,12 @@
 package dev.vladleesi.kmpsharekit
 
-/** Native plain-text sharing. Call [shareText] from the main thread or a browser user gesture. */
+/** Plain-text sharing. Call [shareText] from the UI thread or a browser user gesture. */
 public expect object ShareKit {
     /**
-     * Reports whether the platform supports native text sharing, without opening a share sheet.
+     * Reports whether the platform supports text sharing, without opening sharing UI.
      *
      * Returns `true` on Android and iOS. Browsers require a secure context and the Web Share API.
+     * JVM desktop requires a graphical environment and Desktop MAIL support.
      * This does not check presentation-host readiness, user activation, permissions, or share targets,
      * and does not guarantee that [shareText] will succeed. Safe to call from shared Compose UI code.
      */
@@ -23,6 +24,11 @@ public expect object ShareKit {
      * [IllegalStateException] for an insecure context or missing user activation.
      * Browser sharing is asynchronous: cancellation is ignored and later errors are logged.
      * Use the browser-only callback overload to observe the outcome. Browsers may reject empty text.
+     *
+     * JVM desktop opens an email draft in the default mail client using a `mailto:` URI.
+     * Throws [UnsupportedOperationException] in headless environments or without Desktop MAIL support,
+     * or [IllegalStateException] if the mail client cannot be launched. A configured client is required;
+     * clients may limit text length or normalize line endings. No email is sent automatically.
      */
     public fun shareText(text: String)
 }

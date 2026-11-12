@@ -18,6 +18,7 @@ repository = root / "sharekit/build/maven-repository" / group.replace(".", "/")
 artifacts = {
     "kmp-sharekit": "jar",
     "kmp-sharekit-android": "aar",
+    "kmp-sharekit-jvm": "jar",
     "kmp-sharekit-iosarm64": "klib",
     "kmp-sharekit-iossimulatorarm64": "klib",
     "kmp-sharekit-iosx64": "klib",
@@ -61,6 +62,20 @@ for artifact, extension in artifacts.items():
         require(any(name.endswith(".kt") for name in sources.namelist()), f"No Kotlin sources: {artifact}")
     with zipfile.ZipFile(directory / f"{stem}-javadoc.jar") as documentation:
         require(documentation.testzip() is None, f"Invalid Javadoc jar: {artifact}")
+    if artifact == "kmp-sharekit-jvm":
+        with zipfile.ZipFile(directory / f"{stem}.jar") as binary:
+            require("dev/vladleesi/kmpsharekit/ShareKit.class" in binary.namelist(),
+                    "Missing JVM ShareKit implementation")
+        for usage in ("java-api", "java-runtime"):
+            variants = [variant for variant in module["variants"]
+                        if variant["attributes"].get("org.gradle.usage") == usage
+                        and variant["attributes"].get("org.gradle.category") == "library"]
+            require(bool(variants), f"Missing {usage} variant: {artifact}")
+            for variant in variants:
+                require(variant["attributes"].get("org.jetbrains.kotlin.platform.type") == "jvm",
+                        "Incorrect JVM platform")
+                require(any(file["url"] == f"{stem}.jar" for file in variant.get("files", [])),
+                        "Missing JVM jar reference")
     if artifact in ("kmp-sharekit-js", "kmp-sharekit-wasm-js"):
         expected_platform = "js" if artifact == "kmp-sharekit-js" else "wasm"
         for usage in ("kotlin-api", "kotlin-runtime"):

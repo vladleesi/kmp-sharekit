@@ -19,6 +19,13 @@ kotlin {
     explicitApi()
     compilerOptions.freeCompilerArgs.add("-Xexpect-actual-classes")
 
+    jvm {
+        compilerOptions.jvmTarget.set(JvmTarget.JVM_1_8)
+        testRuns["test"].executionTask.configure {
+            systemProperty("java.awt.headless", "true")
+        }
+    }
+
     android {
         namespace = "dev.vladleesi.kmpsharekit"
         compileSdk = 37
@@ -75,7 +82,7 @@ mavenPublishing {
     pom {
         name.set("ShareKit")
         description.set(
-            "Native text sharing for Kotlin Multiplatform and Compose Multiplatform on Android, iOS, and supported browsers (JS/WasmJS).",
+            "Text sharing for Kotlin Multiplatform and Compose Multiplatform on Android, iOS, JVM desktop, and supported browsers (JS/WasmJS).",
         )
         url.set("https://github.com/vladleesi/kmp-sharekit")
         licenses {

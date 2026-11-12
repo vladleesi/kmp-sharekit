@@ -14,6 +14,9 @@ The toolchain uses Kotlin 2.4.21, AGP 9.3.1, and Gradle 9.7.0, within Kotlin's [
 # All hosts: formatting, Android tests, and AAR
 ./gradlew ktlintCheck :sharekit:testAndroidHostTest :sharekit:bundleAndroidMainAar
 
+# All desktop hosts: JVM tests and library JAR
+./gradlew :sharekit:jvmTest :sharekit:jvmJar
+
 # Browser tests: run the shared webTest suite on both JS and WasmJS in headless Chrome
 ./gradlew :sharekit:jsBrowserTest :sharekit:wasmJsBrowserTest
 
@@ -30,6 +33,8 @@ Android host tests use Robolectric on API 23 and 37; they do not replace testing
 
 Browser tests cover Web Share results and failures on both backends. Before releases, manually test sharing and cancellation over HTTPS with mouse/touch, unsupported browsers, and error/fallback UI. Verify the README's common Compose button on Android, iOS, JS, and WasmJS. Automated browser checks can stub `navigator.share` while preserving real user activation; native OS share sheets need manual testing.
 
+Desktop CI runs JVM tests on macOS, Windows, and Linux. Tests run headless and inject mail handlers to cover URI encoding, capability checks, and launch failures without opening apps. Before releases, also test the common Compose button on a graphical desktop with a configured mail client, verifying Unicode, multiline text, cancellation, and a missing mail client. Desktop sharing opens an email draft via Java Desktop MAIL; support varies by desktop environment. No email is sent automatically.
+
 ## Versioning
 
 `VERSION_NAME` in `gradle.properties` is the only release version setting. ShareKit follows semantic versioning independently of Kotlin and Android tooling. Before a release, update it and `CHANGELOG.md`, and keep README installation examples current. Release tags use `v<version>` (first release: `v0.1.0`).
@@ -38,7 +43,7 @@ Renovate uses the [shared preset](https://github.com/vladleesi/renovate-config) 
 
 ## Publishing
 
-Publications use `dev.vladleesi:kmp-sharekit` and the version above. The publishing plugin generates seven publications: KMP metadata, Android, three iOS architectures, JS (`kmp-sharekit-js`), and WasmJS (`kmp-sharekit-wasm-js`). It includes source jars and required Javadoc classifier jars. API documentation is provided as KDoc in the sources. The validator checks every artifact, browser variant attributes, root platform references, and signatures when requested; no WASI publication is expected.
+Publications use `dev.vladleesi:kmp-sharekit` and the version above. The publishing plugin generates eight publications: KMP metadata, Android, three iOS architectures, JVM (`kmp-sharekit-jvm`), JS (`kmp-sharekit-js`), and WasmJS (`kmp-sharekit-wasm-js`). It includes source jars and required Javadoc classifier jars. API documentation is provided as KDoc in the sources. The validator checks every artifact, JVM and browser variant attributes, root platform references, and signatures when requested; no WASI publication is expected.
 
 Validate the complete Maven repository locally without credentials (macOS required):
 
