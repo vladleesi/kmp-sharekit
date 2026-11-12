@@ -1,0 +1,6 @@
+public final class dev/vladleesi/kmpsharekit/ShareKit {
+	public static final field INSTANCE Ldev/vladleesi/kmpsharekit/ShareKit;
+	public final fun isSupported ()Z
+	public final fun shareText (Ljava/lang/String;)V
+}
+

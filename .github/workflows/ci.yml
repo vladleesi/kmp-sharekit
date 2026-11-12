@@ -87,6 +87,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6.4.1
         with:
           cache-provider: basic
+      - name: Check release and npm lockfile versions
+        run: python3 .github/scripts/check-release-version.py
       - name: Test JS and WasmJS in Chrome
         env:
           CHROME_BIN: /usr/bin/google-chrome
@@ -118,8 +120,10 @@ jobs:
           :sharekit:linkDebugFrameworkIosX64 :sharekit:iosSimulatorArm64Test --stacktrace
       - name: Validate all Maven publications locally
         run: |
-          ./gradlew :sharekit:publishAllPublicationsToValidationRepository -PsignAllPublications=false --stacktrace
+          ./gradlew :sharekit:checkKotlinAbi :sharekit:publishAllPublicationsToValidationRepository -PsignAllPublications=false --stacktrace
           python3 .github/scripts/verify-publications.py
+      - name: Compile an independent consumer of every platform artifact
+        run: ./gradlew -p checks/consumer compileKotlinDesktop compileAndroidMain compileKotlinJs compileKotlinWasmJs compileKotlinIosArm64 compileKotlinIosSimulatorArm64 compileKotlinIosX64 --stacktrace
 
   promote:
     needs: [android, desktop, browser, apple]
@@ -128,7 +132,6 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: write
-      actions: write
     concurrency:
       group: promote-master
       cancel-in-progress: false
@@ -150,17 +153,3 @@ jobs:
           git merge-base --is-ancestor origin/master "$GITHUB_SHA"
           git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin "$GITHUB_SHA:refs/heads/master"
           echo 'promoted=true' >> "$GITHUB_OUTPUT"
-      - name: Start the release workflow on master
-        if: steps.promote.outputs.promoted == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          # A newly promoted workflow can take a moment to appear in the Actions API.
-          for attempt in 1 2 3 4 5 6; do
-            if gh workflow run release.yml --ref master --field sha="$GITHUB_SHA" --field confirm=true; then
-              exit 0
-            fi
-            echo "Waiting for release workflow registration (attempt $attempt)."
-            sleep 5
-          done
-          exit 1

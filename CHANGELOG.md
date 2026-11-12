@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.1 — pending review
+
+- Fix browser CI failing on stale npm workspace versions; add an early version consistency check.
+- Add checked-in API baselines and CI compatibility validation.
+- Generate and package HTML API documentation with every Maven publication.
+- Compile an independent consumer against all platform publications.
+- Require an explicit confirmed release dispatch after review; CI no longer starts releases automatically.
+
 ## 0.3.0 — 2026-11-12
 
 - Add a JVM desktop target for macOS, Windows, and Linux using Java Desktop MAIL to open an email draft with the shared text. Requires a graphical desktop with MAIL support and a configured mail client; does not send email or copy text automatically.

@@ -2,7 +2,7 @@
 
 Lightweight native text sharing for Kotlin Multiplatform and Compose Multiplatform.
 
-[![Version](https://img.shields.io/badge/version-0.3.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.3.1-blue)](CHANGELOG.md)
 [![Build](https://github.com/vladleesi/kmp-sharekit/actions/workflows/ci.yml/badge.svg)](https://github.com/vladleesi/kmp-sharekit/actions/workflows/ci.yml)
 [![Maven Central](https://img.shields.io/maven-central/v/dev.vladleesi/kmp-sharekit)](https://central.sonatype.com/artifact/dev.vladleesi/kmp-sharekit)
 [![License](https://img.shields.io/badge/license-Apache_2.0-blue)](LICENSE)
@@ -20,12 +20,14 @@ JVM desktop supports Compose Multiplatform apps on macOS, Windows, and Linux whe
 
 ## Installation
 
+Version 0.3.1 is being prepared for review. Use 0.3.0 until 0.3.1 is published.
+
 Use Kotlin 2.4.21+ and Maven Central. Add to your shared module:
 
 ```kotlin
 kotlin {
     sourceSets.commonMain.dependencies {
-        implementation("dev.vladleesi:kmp-sharekit:0.3.0")
+        implementation("dev.vladleesi:kmp-sharekit:0.3.1")
     }
 }
 ```
@@ -103,3 +105,5 @@ ShareKit.shareText("Hello") { result ->
 Currently supports plain text. See [CHANGELOG.md](CHANGELOG.md) and [CONTRIBUTING.md](CONTRIBUTING.md) for release notes, checks, and publishing.
 
 [Apache License 2.0](LICENSE) · [Code of Conduct](CODE_OF_CONDUCT.md)
+
+Release milestones and approval checkpoints are tracked in [ROADMAP.md](ROADMAP.md).

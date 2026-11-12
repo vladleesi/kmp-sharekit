@@ -62,6 +62,9 @@ for artifact, extension in artifacts.items():
         require(any(name.endswith(".kt") for name in sources.namelist()), f"No Kotlin sources: {artifact}")
     with zipfile.ZipFile(directory / f"{stem}-javadoc.jar") as documentation:
         require(documentation.testzip() is None, f"Invalid Javadoc jar: {artifact}")
+        require("index.html" in documentation.namelist(), f"Missing API documentation: {artifact}")
+        require(any("share-text" in name and name.endswith(".html") for name in documentation.namelist()),
+                f"Missing shareText API documentation: {artifact}")
     if artifact == "kmp-sharekit-jvm":
         with zipfile.ZipFile(directory / f"{stem}.jar") as binary:
             require("dev/vladleesi/kmpsharekit/ShareKit.class" in binary.namelist(),

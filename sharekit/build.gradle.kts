@@ -1,3 +1,4 @@
+import com.vanniktech.maven.publish.JavadocJar
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -6,6 +7,7 @@ plugins {
     alias(libs.plugins.android.multiplatform)
     alias(libs.plugins.maven.publish)
     alias(libs.plugins.ktlint)
+    alias(libs.plugins.dokka)
 }
 
 group = providers.gradleProperty("GROUP").get()
@@ -17,6 +19,8 @@ ktlint {
 
 kotlin {
     explicitApi()
+    @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
+    abiValidation()
     compilerOptions.freeCompilerArgs.add("-Xexpect-actual-classes")
 
     jvm {
@@ -77,6 +81,7 @@ kotlin {
 }
 
 mavenPublishing {
+    configureBasedOnAppliedPlugins(javadocJar = JavadocJar.Dokka("dokkaGeneratePublicationHtml"))
     // Remote publication is an explicit release workflow step.
     publishToMavenCentral(automaticRelease = false)
     pom {

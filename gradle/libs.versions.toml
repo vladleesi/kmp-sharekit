@@ -6,6 +6,7 @@ ktlint-plugin = "14.2.0"
 ktlint-engine = "1.8.0"
 robolectric = "4.17"
 maven-publish = "0.37.0"
+dokka = "2.2.0"
 # Browser test tooling: satisfy schema-utils' peer range and keep a single webpack instance.
 webpack = "5.112.2"
 
@@ -17,3 +18,4 @@ kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref 
 android-multiplatform = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint-plugin" }
 maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "maven-publish" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }

@@ -1,0 +1,2 @@
+# Preserve the Kotlin ABI generator's trailing separator in checked-in dumps.
+sharekit/api/** whitespace=-blank-at-eof

@@ -1,6 +1,6 @@
 # Contributing
 
-Open an issue for bugs or proposed API changes. Branch from `develop` and target all contributor pull requests at `develop`. Keep changes focused, describe the behavior change, and add tests when behavior changes. CI promotes verified `develop` commits to the protected `master` branch.
+Open an issue for bugs or proposed API changes. Branch from `develop` and target all contributor pull requests at `develop`. Keep changes focused, describe the behavior change, and add tests when behavior changes. CI promotes verified `develop` commits to the protected `master` branch. Releases require explicit maintainer review and a confirmed manual dispatch. See [ROADMAP.md](ROADMAP.md).
 
 ## Development
 
@@ -37,13 +37,13 @@ Desktop CI runs JVM tests on macOS, Windows, and Linux. Tests run headless and i
 
 ## Versioning
 
-`VERSION_NAME` in `gradle.properties` is the only release version setting. ShareKit follows semantic versioning independently of Kotlin and Android tooling. Before a release, update it and `CHANGELOG.md`, and keep README installation examples current. Release tags use `v<version>` (first release: `v0.1.0`).
+`VERSION_NAME` in `gradle.properties` is the only release version setting. ShareKit follows semantic versioning independently of Kotlin and Android tooling. Before a release, update it and `CHANGELOG.md`, and keep README installation examples current. Regenerate both npm lockfiles with `./gradlew kotlinUpgradePackageLock kotlinWasmUpgradePackageLock --rerun-tasks`; run `python3 .github/scripts/check-release-version.py` and commit the lockfiles with the version bump. Release tags use `v<version>` (first release: `v0.1.0`).
 
 Renovate uses the [shared preset](https://github.com/vladleesi/renovate-config) to report updates in its Dependency Dashboard. Updates require dashboard approval and target `develop`; automerge is disabled.
 
 ## Publishing
 
-Publications use `dev.vladleesi:kmp-sharekit` and the version above. The publishing plugin generates eight publications: KMP metadata, Android, three iOS architectures, JVM (`kmp-sharekit-jvm`), JS (`kmp-sharekit-js`), and WasmJS (`kmp-sharekit-wasm-js`). It includes source jars and required Javadoc classifier jars. API documentation is provided as KDoc in the sources. The validator checks every artifact, JVM and browser variant attributes, root platform references, and signatures when requested; no WASI publication is expected.
+Publications use `dev.vladleesi:kmp-sharekit` and the version above. The publishing plugin generates eight publications: KMP metadata, Android, three iOS architectures, JVM (`kmp-sharekit-jvm`), JS (`kmp-sharekit-js`), and WasmJS (`kmp-sharekit-wasm-js`). It includes source jars and generated Dokka HTML documentation in the Javadoc classifier jars. Generate browsable documentation with `./gradlew :sharekit:dokkaGeneratePublicationHtml` (output: `sharekit/build/dokka/html`). The validator checks every artifact, JVM and browser variant attributes, root platform references, and signatures when requested; no WASI publication is expected.
 
 Validate the complete Maven repository locally without credentials (macOS required):
 
@@ -60,6 +60,12 @@ For releases, verify the `dev.vladleesi` namespace in [Central Portal](https://c
 
 Publish the corresponding public key to a public keyserver and keep a secure backup of the private key. Local signing can use the publisher's [in-memory signing properties](https://vanniktech.github.io/gradle-maven-publish-plugin/central/#secrets) through environment variables or private user Gradle properties. Never put credentials in this repository or logs.
 
-After Android, browser, and Apple CI checks pass on `develop`, CI fast-forwards `master` to that exact commit and starts the Release workflow there. It never force-pushes or overwrites divergent history. A newer `develop` commit supersedes an older run awaiting promotion.
+After Android, desktop, browser, and Apple CI checks pass on `develop`, CI fast-forwards `master` to that exact commit and stops there for maintainer review. It never force-pushes or overwrites divergent history. A newer `develop` commit supersedes an older run awaiting promotion.
 
-The Release workflow verifies the master commit, reruns validation, creates `v<version>` and a stable GitHub release, then signs and publishes to Maven Central. A version already tagged at an older commit is skipped until `VERSION_NAME` is bumped. To retry a failed release, rerun its failed jobs or dispatch Release on `master` with the original commit SHA and explicit confirmation. Central versions are immutable; do not republish a successful version.
+After explicit approval, manually dispatch Release on `master` with the reviewed commit SHA and `confirm=true`. The Release workflow verifies the master commit, reruns validation, creates `v<version>` and a stable GitHub release, then signs and publishes to Maven Central. A version already tagged at an older commit is skipped until `VERSION_NAME` is bumped. To retry a failed release, rerun its failed jobs or dispatch Release on `master` with the original commit SHA and explicit confirmation. Central versions are immutable; do not republish a successful version.
+
+## API and consumer checks
+
+Run `./gradlew :sharekit:checkKotlinAbi` to compare the exported API with the checked-in baselines. Only run `:sharekit:updateKotlinAbi` after reviewing an intentional API change. The full check runs on macOS so every Apple target is available. Baselines cover JVM, Android, JS, WasmJS, and iOS; source compatibility and behavior still require tests.
+
+After local publication, compile [checks/consumer](checks/consumer/README.md) to verify root metadata and target selection from an independent build. CI resolves ShareKit exclusively from the local validation repository so a missing publication cannot silently fall back to Maven Central.

@@ -1,0 +1,9 @@
+public final class dev/vladleesi/kmpsharekit/ShareKit {
+	public static final field INSTANCE Ldev/vladleesi/kmpsharekit/ShareKit;
+	public final fun isSupported ()Z
+	public final fun setActivity (Landroid/app/Activity;)V
+	public final fun setActivityProvider (Lkotlin/jvm/functions/Function0;)V
+	public final fun shareText (Landroid/app/Activity;Ljava/lang/String;)V
+	public final fun shareText (Ljava/lang/String;)V
+}
+

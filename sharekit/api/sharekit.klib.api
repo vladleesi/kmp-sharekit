@@ -1,0 +1,27 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64, iosX64, js, wasmJs]
+// Alias: ios => [iosArm64, iosSimulatorArm64, iosX64]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <dev.vladleesi:sharekit>
+final object dev.vladleesi.kmpsharekit/ShareKit { // dev.vladleesi.kmpsharekit/ShareKit|null[0]
+    final fun isSupported(): kotlin/Boolean // dev.vladleesi.kmpsharekit/ShareKit.isSupported|isSupported(){}[0]
+    final fun shareText(kotlin/String) // dev.vladleesi.kmpsharekit/ShareKit.shareText|shareText(kotlin.String){}[0]
+
+    // Targets: [ios]
+    final fun shareText(kotlin/String, platform.UIKit/UIViewController) // dev.vladleesi.kmpsharekit/ShareKit.shareText|shareText(kotlin.String;platform.UIKit.UIViewController){}[0]
+
+    // Targets: [js, wasmJs]
+    final fun shareText(kotlin/String, kotlin/Function1<kotlin/Result<kotlin/Unit>, kotlin/Unit>) // dev.vladleesi.kmpsharekit/ShareKit.shareText|shareText(kotlin.String;kotlin.Function1<kotlin.Result<kotlin.Unit>,kotlin.Unit>){}[0]
+}
+
+// Targets: [js, wasmJs]
+final class dev.vladleesi.kmpsharekit/BrowserShareException : kotlin/IllegalStateException { // dev.vladleesi.kmpsharekit/BrowserShareException|null[0]
+    constructor <init>(kotlin/String, kotlin/String) // dev.vladleesi.kmpsharekit/BrowserShareException.<init>|<init>(kotlin.String;kotlin.String){}[0]
+
+    final val name // dev.vladleesi.kmpsharekit/BrowserShareException.name|{}name[0]
+        final fun <get-name>(): kotlin/String // dev.vladleesi.kmpsharekit/BrowserShareException.name.<get-name>|<get-name>(){}[0]
+}
