@@ -1,6 +1,6 @@
 package dev.vladleesi.kmpsharekit
 
-/** Plain-text sharing. Call [shareText] from the UI thread or a browser user gesture. */
+/** Text and URL sharing. Call from the UI thread or a browser user gesture. */
 public expect object ShareKit {
     /** Reports the sharing method and supported request fields without opening UI. */
     public fun capabilities(): ShareCapabilities
@@ -10,9 +10,10 @@ public expect object ShareKit {
 
     /**
      * Starts sharing immediately. Call on the UI thread or directly within a browser user gesture.
-     * Preflight errors are delivered synchronously. Android/JVM report launch synchronously;
-     * iOS/browser report the later platform outcome. The callback receives one terminal result.
-     * User callback exceptions propagate; no implicit clipboard or email fallback is performed.
+     * Preflight errors are delivered synchronously. Android/JVM email report launch synchronously;
+     * iOS/browser report the later platform outcome. macOS native reports picker cancellation or
+     * handoff on the AWT event thread. The callback receives one terminal result.
+     * User callback exceptions propagate on the callback thread; no implicit clipboard or email fallback is performed.
      */
     public fun share(
         request: ShareRequest,
@@ -23,7 +24,8 @@ public expect object ShareKit {
      * Reports whether the platform supports text sharing, without opening sharing UI.
      *
      * Returns `true` on Android and iOS. Browsers require a secure context and the Web Share API.
-     * JVM desktop requires a graphical environment and Desktop MAIL support.
+     * JVM desktop checks graphical Desktop MAIL support, preserving legacy [shareText] behavior.
+     * Use [capabilities] or [canShare] for request-based native macOS sharing.
      * This does not check presentation-host readiness, user activation, permissions, or share targets,
      * and does not guarantee that [shareText] will succeed. Safe to call from shared Compose UI code.
      */

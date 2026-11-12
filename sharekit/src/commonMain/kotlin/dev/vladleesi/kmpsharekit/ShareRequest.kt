@@ -31,7 +31,7 @@ public enum class ShareFailure {
 
 /** One terminal observation per request. No outcome guarantees delivery to a recipient. */
 public sealed interface ShareResult {
-    /** Android chooser or desktop mail composer was launched; later outcome is unknown. */
+    /** Android chooser/desktop mail composer launched, or macOS service selected; later outcome is unknown. */
     public data object Launched : ShareResult
 
     /** iOS activity completed or the browser share promise resolved; delivery is not confirmed. */

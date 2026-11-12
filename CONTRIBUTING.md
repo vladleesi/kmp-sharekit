@@ -1,6 +1,6 @@
 # Contributing
 
-Open an issue for bugs or proposed API changes. Branch from `develop` and target all contributor pull requests at `develop`. Keep changes focused, describe the behavior change, and add tests when behavior changes. CI promotes verified `develop` commits to the protected `master` branch. Approved release commits are published automatically through CI. Wait for maintainer review after each release before starting the next milestone. See [ROADMAP.md](ROADMAP.md).
+Open an issue for bugs or proposed API changes. Branch from `develop` and target pull requests at `develop`. Keep changes focused, describe the behavior change, and add tests when behavior changes. See the [roadmap](ROADMAP.md) for planned features.
 
 ## Development
 
@@ -33,7 +33,9 @@ Android host tests use Robolectric on API 23 and 37; they do not replace testing
 
 Browser tests cover Web Share results and failures on both backends. Before releases, manually test sharing and cancellation over HTTPS with mouse/touch, unsupported browsers, and error/fallback UI. Verify the README's common Compose button on Android, iOS, JS, and WasmJS. Automated browser checks can stub `navigator.share` while preserving real user activation; native OS share sheets need manual testing.
 
-Desktop CI runs JVM tests on macOS, Windows, and Linux. Tests run headless and inject mail handlers to cover URI encoding, capability checks, and launch failures without opening apps. Before releases, also test the common Compose button on a graphical desktop with a configured mail client, verifying Unicode, multiline text, cancellation, and a missing mail client. Desktop sharing opens an email draft via Java Desktop MAIL; support varies by desktop environment. No email is sent automatically.
+Desktop CI runs JVM tests on macOS, Windows, and Linux. Tests run headless and inject handlers to cover request routing, URI encoding, capability checks, and launch failures. On macOS, `jvmTest` also compiles the universal JNI bridge, checks library loading, and runs native session lifecycle tests. Use a full JDK with JNI headers, or provide `-Psharekit.jniHeaders=/path/to/jdk/include`.
+
+Before releases, run the [packaged macOS check](checks/macos/README.md), review the [native packaging requirements](docs/macos.md), and test actual service selection on Apple Silicon and Intel. On other graphical desktops, test email with Unicode, multiline text, and a missing mail client. The JVM request API uses native sharing on macOS and email elsewhere; legacy `shareText` always uses email. No email is sent automatically.
 
 ## Versioning
 

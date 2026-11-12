@@ -7,9 +7,12 @@ import java.net.URLEncoder
 
 public actual object ShareKit {
     private val sharing = DesktopSharing()
+    private val requests = DesktopRequests(email = sharing)
 
-    public actual fun capabilities(): ShareCapabilities =
-        ShareCapabilities(if (isSupported()) ShareMethod.EMAIL else ShareMethod.UNAVAILABLE, true)
+    public actual fun capabilities(): ShareCapabilities = requests.capabilities()
+
+    /** Checks an explicit desktop method without opening UI. */
+    public fun capabilities(method: ShareMethod): ShareCapabilities = requests.capabilities(method)
 
     public actual fun canShare(request: ShareRequest): Boolean = request.failure(capabilities()) == null
 
@@ -17,10 +20,19 @@ public actual object ShareKit {
         request: ShareRequest,
         onResult: (ShareResult) -> Unit,
     ) {
-        sharing.share(request, onResult)
+        requests.share(request, onResult = onResult)
     }
 
-    /** Checks desktop MAIL support. A configured mail client is still required to share. */
+    /** Uses an explicit desktop method. Native failures never fall back to email automatically. */
+    public fun share(
+        request: ShareRequest,
+        method: ShareMethod,
+        onResult: (ShareResult) -> Unit,
+    ) {
+        requests.share(request, method, onResult)
+    }
+
+    /** Checks MAIL support for legacy [shareText]. Use [capabilities] for request-based sharing. */
     public actual fun isSupported(): Boolean = sharing.isSupported()
 
     /** Opens an email draft containing [text] in the default mail client. Does not send email. */

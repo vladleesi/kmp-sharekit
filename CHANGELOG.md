@@ -1,21 +1,29 @@
 # Changelog
 
+## 0.5.0
+
+- Add native macOS 13+ sharing to the JVM request API, anchored in the active window, with picker cancellation, handoff, busy, and host failure results.
+- Keep legacy JVM `shareText` and `isSupported` email behavior and add explicit desktop method selection for `share` and `capabilities`.
+- Bundle an Apple Silicon/Intel JNI bridge in the JVM artifact. Load it by name with `System.loadLibrary`; applications package the library on their native library path.
+- Add native session lifecycle tests, JVM routing tests, packaging checks, and desktop consumer coverage.
+- Shorten the README while retaining usage examples; add a separate macOS packaging guide.
+
 ## 0.4.0 — 2026-11-12
 
-- Restore automatic CI release dispatch after verified promotion, including GitHub tags/releases and Maven Central publication. Keep review checkpoints between releases.
+- Restore automatic GitHub and Maven Central releases after CI validation.
 - Add common ShareRequest, ShareResult, ShareFailure, ShareCapabilities, and ShareMethod APIs.
 - Add share(request, onResult), capabilities(), and canShare(request), preserving all existing sharing signatures.
 - Support text and URL payloads on every platform, and optional title metadata on Android, JVM, and browsers; explicitly report unsupported iOS titles.
 - Report platform launch/completion, cancellation, ambiguous browser aborts, and typed failures. Guard overlapping iOS/browser requests and support explicit mobile presentation hosts.
 - Extend platform tests, publication consumer coverage, API baselines, and migration documentation. Run JS and WasmJS tests in both Chrome and Firefox and cover missing/denied browser APIs.
 
-## 0.3.1 — pending review
+## 0.3.1
 
 - Fix browser CI failing on stale npm workspace versions; add an early version consistency check.
 - Add checked-in API baselines and CI compatibility validation.
 - Generate and package HTML API documentation with every Maven publication.
 - Compile an independent consumer against all platform publications.
-- Require an explicit confirmed release dispatch after review; CI no longer starts releases automatically.
+- Switch to manually triggered releases.
 
 ## 0.3.0 — 2026-11-12
 

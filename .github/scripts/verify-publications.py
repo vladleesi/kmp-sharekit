@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+import struct
 import sys
 import xml.etree.ElementTree as ET
 import zipfile
@@ -69,6 +70,14 @@ for artifact, extension in artifacts.items():
         with zipfile.ZipFile(directory / f"{stem}.jar") as binary:
             require("dev/vladleesi/kmpsharekit/ShareKit.class" in binary.namelist(),
                     "Missing JVM ShareKit implementation")
+            native_path = "native/macos/libsharekit.dylib"
+            require(native_path in binary.namelist(), "Missing macOS JNI bridge; publish from macOS")
+            native = binary.read(native_path)
+            require(len(native) >= 48, "Truncated macOS JNI bridge")
+            magic, slices = struct.unpack_from(">II", native)
+            require(magic == 0xCAFEBABE and slices == 2, "macOS bridge must be a universal binary")
+            architectures = {struct.unpack_from(">I", native, 8 + index * 20)[0] for index in range(slices)}
+            require(architectures == {0x01000007, 0x0100000C}, "macOS bridge must contain x86_64 and arm64")
         for usage in ("java-api", "java-runtime"):
             variants = [variant for variant in module["variants"]
                         if variant["attributes"].get("org.gradle.usage") == usage

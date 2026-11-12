@@ -30,7 +30,9 @@ public final class dev/vladleesi/kmpsharekit/ShareKit {
 	public static final field INSTANCE Ldev/vladleesi/kmpsharekit/ShareKit;
 	public final fun canShare (Ldev/vladleesi/kmpsharekit/ShareRequest;)Z
 	public final fun capabilities ()Ldev/vladleesi/kmpsharekit/ShareCapabilities;
+	public final fun capabilities (Ldev/vladleesi/kmpsharekit/ShareMethod;)Ldev/vladleesi/kmpsharekit/ShareCapabilities;
 	public final fun isSupported ()Z
+	public final fun share (Ldev/vladleesi/kmpsharekit/ShareRequest;Ldev/vladleesi/kmpsharekit/ShareMethod;Lkotlin/jvm/functions/Function1;)V
 	public final fun share (Ldev/vladleesi/kmpsharekit/ShareRequest;Lkotlin/jvm/functions/Function1;)V
 	public final fun shareText (Ljava/lang/String;)V
 }
