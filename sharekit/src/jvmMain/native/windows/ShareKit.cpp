@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <roapi.h>
 #include <commctrl.h>
 #include <shobjidl.h>
 #include <winrt/Windows.ApplicationModel.DataTransfer.h>
