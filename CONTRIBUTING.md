@@ -33,9 +33,9 @@ Android host tests use Robolectric on API 23 and 37; they do not replace testing
 
 Browser tests cover Web Share results and failures on both backends. Before releases, manually test sharing and cancellation over HTTPS with mouse/touch, unsupported browsers, and error/fallback UI. Verify the README's common Compose button on Android, iOS, JS, and WasmJS. Automated browser checks can stub `navigator.share` while preserving real user activation; native OS share sheets need manual testing.
 
-Desktop CI runs JVM tests on macOS, Windows, and Linux. Tests run headless and inject handlers to cover request routing, URI encoding, capability checks, and launch failures. On macOS, `jvmTest` also compiles the universal JNI bridge, checks library loading, and runs native session lifecycle tests. Use a full JDK with JNI headers, or provide `-Psharekit.jniHeaders=/path/to/jdk/include`.
+Desktop CI runs JVM tests on macOS, Windows, and Linux. Windows builds require Visual Studio 2022+ with the Desktop development with C++ workload, a Windows 10/11 SDK with C++/WinRT headers, CMake 3.24+, and an x64 JDK with JNI headers. `jvmTest` builds and tests the Windows DLL through CMake, including payloads, native UI-thread dispatch, and host cleanup. The native tests also launch the real share panel when the Windows session supports it, without choosing a recipient; CI logs state when this UI check is skipped. Test actual target selection and dismissal on an interactive Windows desktop before distributing an application. See the [Windows packaging guide](docs/windows.md). Tests run headless and inject handlers to cover request routing, URI encoding, capability checks, and launch failures. On macOS, `jvmTest` also compiles the universal JNI bridge, checks library loading, and runs native session lifecycle tests. Use a full JDK with JNI headers, or provide `-Psharekit.jniHeaders=/path/to/jdk/include`.
 
-Before releases, run the [packaged macOS check](checks/macos/README.md), review the [native packaging requirements](docs/macos.md), and test actual service selection on Apple Silicon and Intel. On other graphical desktops, test email with Unicode, multiline text, and a missing mail client. The JVM request API uses native sharing on macOS and email elsewhere; legacy `shareText` always uses email. No email is sent automatically.
+Before releases, run the [packaged macOS check](checks/macos/README.md), review the [native packaging requirements](docs/macos.md), and test actual service selection on Apple Silicon and Intel. On other graphical desktops, test email with Unicode, multiline text, and a missing mail client. The JVM request API uses native sharing on macOS and Windows, and email on Linux; legacy `shareText` always uses email. No email is sent automatically.
 
 ## Versioning
 
@@ -47,10 +47,10 @@ Renovate uses the [shared preset](https://github.com/vladleesi/renovate-config) 
 
 Publications use `dev.vladleesi:kmp-sharekit` and the version above. The publishing plugin generates eight publications: KMP metadata, Android, three iOS architectures, JVM (`kmp-sharekit-jvm`), JS (`kmp-sharekit-js`), and WasmJS (`kmp-sharekit-wasm-js`). It includes source jars and generated Dokka HTML documentation in the Javadoc classifier jars. Generate browsable documentation with `./gradlew :sharekit:dokkaGeneratePublicationHtml` (output: `sharekit/build/dokka/html`). The validator checks every artifact, JVM and browser variant attributes, root platform references, and signatures when requested; no WASI publication is expected.
 
-Validate the complete Maven repository locally without credentials (macOS required):
+Validate the complete Maven repository locally without credentials (macOS required). First build/test the Windows DLL with `./gradlew :sharekit:jvmTest` on Windows, or download the `sharekit-windows-x64` artifact from the same commit’s CI run. Set the property below to the directory containing `sharekit_windows.dll`:
 
 ```sh
-./gradlew :sharekit:publishAllPublicationsToValidationRepository -PsignAllPublications=false
+./gradlew :sharekit:publishAllPublicationsToValidationRepository -PsignAllPublications=false -Psharekit.windowsNativeDir=/path/to/tested/windows-dll
 python3 .github/scripts/verify-publications.py
 ```
 
@@ -63,6 +63,8 @@ For releases, verify the `dev.vladleesi` namespace in [Central Portal](https://c
 Publish the corresponding public key to a public keyserver and keep a secure backup of the private key. Local signing can use the publisher's [in-memory signing properties](https://vanniktech.github.io/gradle-maven-publish-plugin/central/#secrets) through environment variables or private user Gradle properties. Never put credentials in this repository or logs.
 
 After Android, desktop, browser, and Apple CI checks pass on `develop`, CI fast-forwards `master` to that exact commit and starts the Release workflow there. It never force-pushes or overwrites divergent history. A newer `develop` commit supersedes an older run awaiting promotion.
+
+Windows desktop CI uploads its tested x64 DLL. Apple validation and release publishing download that artifact from the same workflow run and package it alongside the universal macOS bridge. The publication validator requires both native binaries, their architectures, and the Windows JNI exports.
 
 The automatically dispatched Release workflow verifies the master commit, reruns validation, creates `v<version>` and a stable GitHub release, then signs and publishes to Maven Central. A version already tagged at an older commit is skipped until `VERSION_NAME` is bumped. To retry a failed release, rerun its failed jobs or dispatch Release on `master` with the original commit SHA and explicit confirmation. Central versions are immutable; do not republish a successful version.
 

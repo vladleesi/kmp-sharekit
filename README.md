@@ -12,7 +12,7 @@ Use Kotlin 2.4.21+ and `mavenCentral()`. Add to your shared module:
 ```kotlin
 kotlin {
     sourceSets.commonMain.dependencies {
-        implementation("dev.vladleesi:kmp-sharekit:0.5.0")
+        implementation("dev.vladleesi:kmp-sharekit:0.6.0")
     }
 }
 ```
@@ -43,7 +43,7 @@ For simple text sharing without a result callback:
 ShareKit.shareText("Hello from shared Kotlin!")
 ```
 
-On JVM, this legacy call opens an email draft. Use `share(request)` for the native macOS picker and typed failures.
+On JVM, this legacy call opens an email draft. Use `share(request)` for native macOS/Windows sharing and typed failures.
 
 ## Compose example
 
@@ -74,7 +74,7 @@ fun ShareButton(text: String, onResult: (ShareResult) -> Unit) {
 | --- | --- | --- |
 | Android 21+ | Native share sheet | Register your Activity below; call on the main thread |
 | iOS 15+ | Native share sheet, including iPad | Visible view controller; call on the main thread |
-| JVM desktop | Native picker on macOS 13+; email on Windows/Linux | [macOS packaging](docs/macos.md), or a configured mail client |
+| JVM desktop | Native sharing on macOS 13+ and Windows 10 1607+ (x64 JVM); email on Linux | [macOS](docs/macos.md) / [Windows packaging](docs/windows.md), or a configured mail client |
 | JS / WasmJS | Web Share API | Supported browser, HTTPS, and a user gesture |
 
 Android: register the current Activity when it resumes:
@@ -94,7 +94,9 @@ Browsers require Web Share support; not every desktop or mobile browser provides
 
 On macOS, `share(request)` presents a picker anchored in the active window. Package the native library using the [macOS setup guide](docs/macos.md). Dismissing the picker reports `Cancelled`; selecting a service reports `Launched`. The service's later outcome is not observed.
 
-Windows and Linux open an email draft through the default mail client. On any desktop, select email explicitly from `jvmMain`:
+On Windows, `share(request)` opens the Windows share panel for the foreground window belonging to your application. Package the x64 DLL using the [Windows setup guide](docs/windows.md). A successful panel launch reports `Launched`; subsequent selection, cancellation, and delivery are not observed.
+
+Linux opens an email draft through the default mail client. On any desktop, select email explicitly from `jvmMain`:
 
 ```kotlin
 import dev.vladleesi.kmpsharekit.ShareMethod

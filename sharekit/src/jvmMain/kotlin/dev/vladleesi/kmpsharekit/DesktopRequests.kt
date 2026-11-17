@@ -7,9 +7,17 @@ import java.util.concurrent.atomic.AtomicBoolean
 internal class DesktopRequests(
     private val email: DesktopSharing = DesktopSharing(),
     private val mac: Boolean = System.getProperty("os.name").startsWith("Mac"),
-    private val nativeAvailable: () -> Boolean = { !GraphicsEnvironment.isHeadless() && MacSharingBridge.loaded },
+    private val windows: Boolean = !mac && System.getProperty("os.name").startsWith("Windows"),
+    private val nativeAvailable: () -> Boolean = {
+        !GraphicsEnvironment.isHeadless() &&
+            if (mac) MacSharingBridge.loaded else WindowsSharingBridge.loaded && WindowsSharingBridge.available()
+    },
     private val nativeShare: (ShareRequest, (ShareResult) -> Unit) -> Unit = { request, callback ->
-        MacSharingBridge.present(request.text, request.url, request.title, MacSharingCallback(callback))
+        if (mac) {
+            MacSharingBridge.present(request.text, request.url, request.title, MacSharingCallback(callback))
+        } else {
+            shareOnWindows(request, callback)
+        }
     },
 ) {
     private val pending = AtomicBoolean()
@@ -17,7 +25,7 @@ internal class DesktopRequests(
     fun capabilities(method: ShareMethod = defaultMethod()): ShareCapabilities {
         val supported =
             when (method) {
-                ShareMethod.NATIVE -> mac && nativeAvailable()
+                ShareMethod.NATIVE -> (mac || windows) && nativeAvailable()
                 ShareMethod.EMAIL -> email.isSupported()
                 ShareMethod.UNAVAILABLE -> false
             }
@@ -61,7 +69,7 @@ internal class DesktopRequests(
         }
     }
 
-    private fun defaultMethod(): ShareMethod = if (mac) ShareMethod.NATIVE else ShareMethod.EMAIL
+    private fun defaultMethod(): ShareMethod = if (mac || windows) ShareMethod.NATIVE else ShareMethod.EMAIL
 }
 
 /** JNI calls this adapter; application code always runs later on the AWT event thread. */

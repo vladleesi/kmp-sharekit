@@ -68,6 +68,13 @@ jobs:
       - name: Test and build JVM desktop library
         shell: bash
         run: ./gradlew :sharekit:jvmTest :sharekit:jvmJar --stacktrace
+      - name: Upload the tested Windows x64 bridge
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: sharekit-windows-x64
+          path: sharekit/build/native-windows/Release/sharekit_windows.dll
+          if-no-files-found: error
 
   browser:
     runs-on: ubuntu-24.04
@@ -96,6 +103,7 @@ jobs:
         run: ./gradlew :sharekit:jsBrowserTest :sharekit:wasmJsBrowserTest --stacktrace
 
   apple:
+    needs: desktop
     runs-on: macos-26
     timeout-minutes: 30
     steps:
@@ -110,6 +118,11 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6.4.1
         with:
           cache-provider: basic
+      - name: Download the tested Windows x64 bridge from this run
+        uses: actions/download-artifact@v8.0.2
+        with:
+          name: sharekit-windows-x64
+          path: ${{ runner.temp }}/sharekit-windows
       - uses: android-actions/setup-android@v4.0.4
         with:
           packages: 'platform-tools platforms;android-37.0 build-tools;36.0.0'
@@ -121,7 +134,7 @@ jobs:
           :sharekit:linkDebugFrameworkIosX64 :sharekit:iosSimulatorArm64Test --stacktrace
       - name: Validate all Maven publications locally
         run: |
-          ./gradlew :sharekit:checkKotlinAbi :sharekit:publishAllPublicationsToValidationRepository -PsignAllPublications=false --stacktrace
+          ./gradlew :sharekit:checkKotlinAbi :sharekit:publishAllPublicationsToValidationRepository -PsignAllPublications=false -Psharekit.windowsNativeDir="$RUNNER_TEMP/sharekit-windows" --stacktrace
           python3 .github/scripts/verify-publications.py
       - name: Compile an independent consumer of every platform artifact
         run: ./gradlew -p checks/consumer compileKotlinDesktop compileAndroidMain compileKotlinJs compileKotlinWasmJs compileKotlinIosArm64 compileKotlinIosSimulatorArm64 compileKotlinIosX64 --stacktrace

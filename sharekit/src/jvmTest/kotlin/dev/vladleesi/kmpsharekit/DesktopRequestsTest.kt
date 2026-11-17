@@ -58,6 +58,7 @@ class DesktopRequestsTest {
         val sharing =
             DesktopRequests(
                 mac = false,
+                windows = false,
                 email = DesktopSharing(canMail = { true }, mail = {}),
                 nativeAvailable = { error("Must not load macOS code") },
             )
@@ -166,6 +167,51 @@ class DesktopRequestsTest {
         if (System.getProperty("os.name").startsWith("Mac")) {
             assertTrue(MacSharingBridge.loaded, "Native library must load from java.library.path")
         }
+        if (System.getProperty("os.name").startsWith("Windows")) {
+            assertTrue(WindowsSharingBridge.loaded, "Windows DLL must load from java.library.path")
+        }
         assertFalse(ShareKit.isSupported())
+    }
+
+    @Test
+    fun windowsDefaultsToNativeAndNeverFallsBackToEmail() {
+        listOf(true, false).forEach { available ->
+            var nativeCalls = 0
+            var emailCalls = 0
+            val request = ShareRequest("Hello 🌍", "https://example.com", "Title")
+            val sharing =
+                DesktopRequests(
+                    mac = false,
+                    windows = true,
+                    email = DesktopSharing(canMail = { true }, mail = { emailCalls++ }),
+                    nativeAvailable = { available },
+                    nativeShare = { payload, callback ->
+                        assertEquals(request, payload)
+                        nativeCalls++
+                        callback(ShareResult.Launched)
+                    },
+                )
+            assertEquals(if (available) ShareMethod.NATIVE else ShareMethod.UNAVAILABLE, sharing.capabilities().method)
+            assertTrue(sharing.capabilities().supportsTitle)
+            sharing.share(request) {
+                assertEquals(if (available) ShareResult.Launched else ShareResult.Failed(ShareFailure.UNAVAILABLE), it)
+            }
+            assertEquals(if (available) 1 else 0, nativeCalls)
+            assertEquals(0, emailCalls)
+            sharing.share(request, ShareMethod.EMAIL) { assertEquals(ShareResult.Launched, it) }
+            assertEquals(1, emailCalls)
+        }
+    }
+
+    @Test
+    fun windowsBridgeMapsLaunchAndFailuresWithoutInventingCancellation() {
+        mapOf(
+            0 to ShareResult.Launched,
+            2 to ShareResult.Failed(ShareFailure.HOST_UNAVAILABLE),
+            3 to ShareResult.Failed(ShareFailure.BUSY),
+            5 to ShareResult.Failed(ShareFailure.PERMISSION_DENIED),
+            6 to ShareResult.Failed(ShareFailure.UNAVAILABLE),
+            99 to ShareResult.Failed(ShareFailure.PLATFORM_ERROR),
+        ).forEach { (status, expected) -> assertEquals(expected, windowsSharingResult(status)) }
     }
 }

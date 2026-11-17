@@ -1,6 +1,14 @@
 # Changelog
 
-## 0.5.0
+## 0.6.0 — 2026-11-16
+
+- Add native Windows sharing to the JVM request API through the Windows share panel, with text, HTTP(S) URLs, and optional titles.
+- Default to native sharing on Windows 10 version 1607+ with an x64 JVM. Explicit email sharing and legacy `shareText` retain their existing behavior; native failures never switch to email automatically.
+- Bundle a Windows x64 JNI bridge alongside the universal macOS bridge. Applications package the DLL on their native library path; see the Windows setup guide.
+- Report `Launched` when Windows opens the panel. Target selection, dismissal, and delivery are not observed. Report unavailable native support, missing application hosts, permission failures, and platform errors.
+- Add Windows native payload, UI-thread dispatch, and host cleanup tests. Require the tested Windows DLL in validated and signed Maven publications.
+
+## 0.5.0 — 2026-11-12
 
 - Add native macOS 13+ sharing to the JVM request API, anchored in the active window, with picker cancellation, handoff, busy, and host failure results.
 - Keep legacy JVM `shareText` and `isSupported` email behavior and add explicit desktop method selection for `share` and `capabilities`.
