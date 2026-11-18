@@ -1,0 +1,23 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64, js, wasmJs]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <dev.vladleesi:sharekit-compose>
+final class dev.vladleesi.kmpsharekit.compose/ShareState { // dev.vladleesi.kmpsharekit.compose/ShareState|null[0]
+    final val isSharing // dev.vladleesi.kmpsharekit.compose/ShareState.isSharing|{}isSharing[0]
+        final fun <get-isSharing>(): kotlin/Boolean // dev.vladleesi.kmpsharekit.compose/ShareState.isSharing.<get-isSharing>|<get-isSharing>(){}[0]
+    final val result // dev.vladleesi.kmpsharekit.compose/ShareState.result|{}result[0]
+        final fun <get-result>(): dev.vladleesi.kmpsharekit/ShareResult? // dev.vladleesi.kmpsharekit.compose/ShareState.result.<get-result>|<get-result>(){}[0]
+
+    final fun clearResult() // dev.vladleesi.kmpsharekit.compose/ShareState.clearResult|clearResult(){}[0]
+    final fun share(dev.vladleesi.kmpsharekit/ShareRequest) // dev.vladleesi.kmpsharekit.compose/ShareState.share|share(dev.vladleesi.kmpsharekit.ShareRequest){}[0]
+    final fun shareFiles(dev.vladleesi.kmpsharekit/ShareFilesRequest) // dev.vladleesi.kmpsharekit.compose/ShareState.shareFiles|shareFiles(dev.vladleesi.kmpsharekit.ShareFilesRequest){}[0]
+}
+
+final val dev.vladleesi.kmpsharekit.compose/dev_vladleesi_kmpsharekit_compose_ShareState$stableprop // dev.vladleesi.kmpsharekit.compose/dev_vladleesi_kmpsharekit_compose_ShareState$stableprop|#static{}dev_vladleesi_kmpsharekit_compose_ShareState$stableprop[0]
+
+final fun dev.vladleesi.kmpsharekit.compose/dev_vladleesi_kmpsharekit_compose_ShareState$stableprop_getter(): kotlin/Int // dev.vladleesi.kmpsharekit.compose/dev_vladleesi_kmpsharekit_compose_ShareState$stableprop_getter|dev_vladleesi_kmpsharekit_compose_ShareState$stableprop_getter(){}[0]
+final fun dev.vladleesi.kmpsharekit.compose/rememberShareState(androidx.compose.runtime/Composer?, kotlin/Int): dev.vladleesi.kmpsharekit.compose/ShareState // dev.vladleesi.kmpsharekit.compose/rememberShareState|rememberShareState(androidx.compose.runtime.Composer?;kotlin.Int){}[0]

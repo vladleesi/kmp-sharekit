@@ -31,7 +31,7 @@ The toolchain uses Kotlin 2.4.21, AGP 9.3.3, and Gradle 9.7.0. AGP stays on the 
 
 Android host tests use Robolectric on API 23 and 37; they do not replace testing on a device. Intel iOS simulator code is compiled and linked, but its tests cannot run on Apple Silicon. Before releases, also open the share sheet in an Android app and an iPhone/iPad app; standalone native tests do not host an application window.
 
-Browser tests cover Web Share results and failures on both backends. Before releases, manually test sharing and cancellation over HTTPS with mouse/touch, unsupported browsers, and error/fallback UI. Verify the README's common Compose button on Android, iOS, JS, and WasmJS. On supported platforms, select a recipient and verify that both a single image and a batch of mixed file types arrive intact. Automated browser checks can stub `navigator.share` while preserving real user activation; native OS share sheets need manual testing.
+Browser tests cover Web Share results and failures on both backends. Before releases, manually test sharing and cancellation over HTTPS with mouse/touch, unsupported browsers, and error/fallback UI. Use the [interactive samples](samples/README.md) to verify Compose behavior on Android, iOS, desktop, JS, and WasmJS. On supported platforms, select a recipient and verify that both a single image and a batch of mixed file types arrive intact. Automated browser checks can stub `navigator.share` while preserving real user activation. Native OS share sheets need manual testing.
 
 Desktop CI runs JVM tests on macOS, Windows, and Linux. Windows builds require Visual Studio 2022+ with the Desktop development with C++ workload, a Windows 10/11 SDK with C++/WinRT headers, CMake 3.24+, and an x64 JDK with JNI headers. `jvmTest` builds and tests the Windows DLL through CMake, including payloads, native UI-thread dispatch, and host cleanup. The native tests also launch the real share panel when the Windows session supports it, without choosing a recipient; CI logs state when this UI check is skipped. Test actual target selection and dismissal on an interactive Windows desktop before distributing an application. See the [Windows packaging guide](docs/windows.md). Tests run headless and inject handlers to cover request routing, URI encoding, capability checks, and launch failures. On macOS, `jvmTest` also compiles the universal JNI bridge, checks library loading, and runs native session lifecycle tests. Use a full JDK with JNI headers, or provide `-Psharekit.jniHeaders=/path/to/jdk/include`.
 
@@ -45,12 +45,12 @@ Renovate uses the [shared preset](https://github.com/vladleesi/renovate-config) 
 
 ## Publishing
 
-Publications use `dev.vladleesi:kmp-sharekit` and the version above. The publishing plugin generates eight publications: KMP metadata, Android, three iOS architectures, JVM (`kmp-sharekit-jvm`), JS (`kmp-sharekit-js`), and WasmJS (`kmp-sharekit-wasm-js`). It includes source jars and generated Dokka HTML documentation in the Javadoc classifier jars. Generate browsable documentation with `./gradlew :sharekit:dokkaGeneratePublicationHtml` (output: `sharekit/build/dokka/html`). The validator checks every artifact, JVM and browser variant attributes, root platform references, and signatures when requested; no WASI publication is expected.
+Both libraries use the version above. The core `dev.vladleesi:kmp-sharekit` has eight publications, including root metadata and the Intel iOS simulator. The optional `dev.vladleesi:kmp-sharekit-compose` has seven publications, including root metadata. Both include sources and Dokka HTML in the Javadoc classifier jars. Generate browsable documentation with `./gradlew dokkaGeneratePublicationHtml`. The validator checks artifacts, variants, dependencies, and signatures when requested.
 
 Validate the complete Maven repository locally without credentials (macOS required). First build/test the Windows DLL with `./gradlew :sharekit:jvmTest` on Windows, or download the `sharekit-windows-x64` artifact from the same commit’s CI run. Set the property below to the directory containing `sharekit_windows.dll`:
 
 ```sh
-./gradlew :sharekit:publishAllPublicationsToValidationRepository -PsignAllPublications=false -Psharekit.windowsNativeDir=/path/to/tested/windows-dll
+./gradlew publishAllPublicationsToValidationRepository -PsignAllPublications=false -Psharekit.windowsNativeDir=/path/to/tested/windows-dll
 python3 .github/scripts/verify-publications.py
 ```
 
@@ -70,6 +70,6 @@ The automatically dispatched Release workflow verifies the master commit, reruns
 
 ## API and consumer checks
 
-Run `./gradlew :sharekit:checkKotlinAbi` to compare the exported API with the checked-in baselines. Only run `:sharekit:updateKotlinAbi` after reviewing an intentional API change. The full check runs on macOS so every Apple target is available. Baselines cover JVM, Android, JS, WasmJS, and iOS; source compatibility and behavior still require tests.
+Run `./gradlew checkKotlinAbi` to compare both exported APIs with their checked-in baselines. Run the affected module's `updateKotlinAbi` task after reviewing an intentional API change. The full check runs on macOS so every Apple target is available. Baselines cover JVM, Android, JS, WasmJS, and iOS. Source compatibility and behavior still require tests.
 
 After local publication, compile [checks/consumer](checks/consumer/README.md) to verify root metadata and target selection from an independent build. CI resolves ShareKit exclusively from the local validation repository so a missing publication cannot silently fall back to Maven Central.

@@ -44,8 +44,10 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6.4.1
         with:
           cache-provider: basic
-      - name: Check formatting, test Android, and build AAR
-        run: ./gradlew ktlintCheck :sharekit:testAndroidHostTest :sharekit:bundleAndroidMainAar --stacktrace
+      - name: Check formatting, test Android, and build the libraries and sample
+        run: >-
+          ./gradlew ktlintCheck :sharekit:testAndroidHostTest :sharekit:bundleAndroidMainAar
+          :sharekit-compose:bundleAndroidMainAar :samples:android:assembleDebug --stacktrace
 
   desktop:
     strategy:
@@ -65,9 +67,9 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6.4.1
         with:
           cache-provider: basic
-      - name: Test and build JVM desktop library
+      - name: Test the JVM desktop libraries and compile the sample
         shell: bash
-        run: ./gradlew :sharekit:jvmTest :sharekit:jvmJar --stacktrace
+        run: ./gradlew :sharekit:jvmTest :sharekit:jvmJar :sharekit-compose:jvmTest :samples:compose:compileKotlinDesktop --stacktrace
       - name: Upload the tested Windows x64 bridge
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v7.0.2
@@ -101,11 +103,15 @@ jobs:
           CHROME_BIN: /usr/bin/google-chrome
           FIREFOX_BIN: /usr/bin/firefox
         run: ./gradlew :sharekit:jsBrowserTest :sharekit:wasmJsBrowserTest --stacktrace
+      - name: Build the browser samples
+        run: >-
+          ./gradlew :samples:compose:jsBrowserDevelopmentExecutableDistribution
+          :samples:compose:wasmJsBrowserDevelopmentExecutableDistribution --stacktrace
 
   apple:
     needs: desktop
     runs-on: macos-26
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -131,10 +137,13 @@ jobs:
           ./gradlew
           :sharekit:compileKotlinIosArm64 :sharekit:compileKotlinIosSimulatorArm64 :sharekit:compileKotlinIosX64
           :sharekit:linkDebugFrameworkIosArm64 :sharekit:linkDebugFrameworkIosSimulatorArm64
-          :sharekit:linkDebugFrameworkIosX64 :sharekit:iosSimulatorArm64Test --stacktrace
+          :sharekit:linkDebugFrameworkIosX64 :sharekit:iosSimulatorArm64Test
+          :samples:compose:linkDebugFrameworkIosArm64 --stacktrace
+      - name: Build the iOS sample app
+        run: bash samples/ios/run.sh --build-only
       - name: Validate all Maven publications locally
         run: |
-          ./gradlew :sharekit:checkKotlinAbi :sharekit:publishAllPublicationsToValidationRepository -PsignAllPublications=false -Psharekit.windowsNativeDir="$RUNNER_TEMP/sharekit-windows" --stacktrace
+          ./gradlew checkKotlinAbi publishAllPublicationsToValidationRepository -PsignAllPublications=false -Psharekit.windowsNativeDir="$RUNNER_TEMP/sharekit-windows" --stacktrace
           python3 .github/scripts/verify-publications.py
       - name: Compile an independent consumer of every platform artifact
         run: ./gradlew -p checks/consumer compileKotlinDesktop compileAndroidMain compileKotlinJs compileKotlinWasmJs compileKotlinIosArm64 compileKotlinIosSimulatorArm64 compileKotlinIosX64 --stacktrace

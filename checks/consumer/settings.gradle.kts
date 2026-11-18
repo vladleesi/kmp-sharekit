@@ -19,3 +19,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "sharekit-consumer"
+include(":compose")

@@ -16,15 +16,23 @@ properties = dict(
 group = properties["GROUP"]
 version = properties["VERSION_NAME"]
 repository = root / "sharekit/build/maven-repository" / group.replace(".", "/")
+platform_extensions = {
+    "": "jar",
+    "-android": "aar",
+    "-jvm": "jar",
+    "-iosarm64": "klib",
+    "-iossimulatorarm64": "klib",
+    "-js": "klib",
+    "-wasm-js": "klib",
+}
+components = {
+    "kmp-sharekit": {**platform_extensions, "-iosx64": "klib"},
+    "kmp-sharekit-compose": platform_extensions,
+}
 artifacts = {
-    "kmp-sharekit": "jar",
-    "kmp-sharekit-android": "aar",
-    "kmp-sharekit-jvm": "jar",
-    "kmp-sharekit-iosarm64": "klib",
-    "kmp-sharekit-iossimulatorarm64": "klib",
-    "kmp-sharekit-iosx64": "klib",
-    "kmp-sharekit-js": "klib",
-    "kmp-sharekit-wasm-js": "klib",
+    component + suffix: (component, suffix, extension)
+    for component, platforms in components.items()
+    for suffix, extension in platforms.items()
 }
 ns = {"m": "http://maven.apache.org/POM/4.0.0"}
 
@@ -34,7 +42,7 @@ def require(condition, message):
         raise SystemExit(message)
 
 
-for artifact, extension in artifacts.items():
+for artifact, (component, suffix, extension) in artifacts.items():
     directory = repository / artifact / version
     stem = f"{artifact}-{version}"
     pom = ET.parse(directory / f"{stem}.pom").getroot()
@@ -48,11 +56,11 @@ for artifact, extension in artifacts.items():
     require(pom.findtext("m:scm/m:tag", namespaces=ns) == f"v{version}", f"Incorrect SCM tag: {artifact}")
     module = json.loads((directory / f"{stem}.module").read_text())
     # Platform modules belong to the root KMP component and point back to its metadata.
-    for field, expected in (("group", group), ("module", "kmp-sharekit"), ("version", version)):
+    for field, expected in (("group", group), ("module", component), ("version", version)):
         require(module["component"].get(field) == expected, f"Incorrect module {field}: {artifact}")
     filenames = [f"{stem}.{extension}", f"{stem}.pom", f"{stem}.module",
                  f"{stem}-sources.jar", f"{stem}-javadoc.jar"]
-    if artifact.startswith("kmp-sharekit-ios"):
+    if suffix.startswith("-ios"):
         filenames.append(f"{stem}-metadata.jar")
     for filename in filenames:
         file = directory / filename
@@ -64,8 +72,18 @@ for artifact, extension in artifacts.items():
     with zipfile.ZipFile(directory / f"{stem}-javadoc.jar") as documentation:
         require(documentation.testzip() is None, f"Invalid Javadoc jar: {artifact}")
         require("index.html" in documentation.namelist(), f"Missing API documentation: {artifact}")
-        require(any("share-text" in name and name.endswith(".html") for name in documentation.namelist()),
-                f"Missing shareText API documentation: {artifact}")
+        api_page = "share-text" if component == "kmp-sharekit" else "remember-share-state"
+        require(any(api_page in name and name.endswith(".html") for name in documentation.namelist()),
+                f"Missing {api_page} API documentation: {artifact}")
+    dependencies = [d for variant in module["variants"] for d in variant.get("dependencies", [])]
+    if component == "kmp-sharekit":
+        require(not any("compose" in d["group"] for d in dependencies), f"Core depends on Compose: {artifact}")
+    if artifact == "kmp-sharekit-compose":
+        require(any(d["group"] == group and d["module"] == "kmp-sharekit"
+                    and d["version"].get("requires") == version for d in dependencies),
+                "Compose metadata must depend on the matching core release")
+        require(any(d["group"] == "org.jetbrains.compose.runtime" and d["module"] == "runtime"
+                    for d in dependencies), "Compose metadata must expose its runtime")
     if artifact == "kmp-sharekit-jvm":
         with zipfile.ZipFile(directory / f"{stem}.jar") as binary:
             require("dev/vladleesi/kmpsharekit/ShareKit.class" in binary.namelist(),
@@ -90,6 +108,7 @@ for artifact, extension in artifacts.items():
             for entry in (b"WindowsSharingBridge_available\0", b"WindowsSharingBridge_present\0",
                           b"WindowsSharingBridge_presentFiles\0"):
                 require(entry in windows, f"Missing Windows JNI export: {entry!r}")
+    if suffix == "-jvm":
         for usage in ("java-api", "java-runtime"):
             variants = [variant for variant in module["variants"]
                         if variant["attributes"].get("org.gradle.usage") == usage
@@ -100,8 +119,8 @@ for artifact, extension in artifacts.items():
                         "Incorrect JVM platform")
                 require(any(file["url"] == f"{stem}.jar" for file in variant.get("files", [])),
                         "Missing JVM jar reference")
-    if artifact in ("kmp-sharekit-js", "kmp-sharekit-wasm-js"):
-        expected_platform = "js" if artifact == "kmp-sharekit-js" else "wasm"
+    if suffix in ("-js", "-wasm-js"):
+        expected_platform = "js" if suffix == "-js" else "wasm"
         for usage in ("kotlin-api", "kotlin-runtime"):
             variants = [variant for variant in module["variants"]
                         if variant["attributes"].get("org.gradle.usage") == usage
@@ -117,8 +136,10 @@ for artifact, extension in artifacts.items():
                 require(any(file["url"] == f"{stem}.klib" for file in variant.get("files", [])),
                         f"Missing browser klib reference: {artifact}")
 
-metadata = json.loads((repository / "kmp-sharekit" / version / f"kmp-sharekit-{version}.module").read_text())
-platforms = {variant["available-at"]["module"] for variant in metadata["variants"] if "available-at" in variant}
-require(platforms == set(artifacts) - {"kmp-sharekit"}, "Root metadata does not reference all platform publications")
-print(f"Validated {len(artifacts)} KMP publications for {group}:kmp-sharekit:{version}"
+for component, platforms in components.items():
+    metadata = json.loads((repository / component / version / f"{component}-{version}.module").read_text())
+    available = {variant["available-at"]["module"] for variant in metadata["variants"] if "available-at" in variant}
+    require(available == {component + suffix for suffix in platforms if suffix},
+            f"Root metadata does not reference all platform publications: {component}")
+print(f"Validated {len(artifacts)} KMP publications for ShareKit {version}"
       + (" with signatures." if "--signed" in sys.argv else "."))

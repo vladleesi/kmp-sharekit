@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.0
+
+- Publish an optional `kmp-sharekit-compose` artifact with `rememberShareState()` for observable sharing progress and results.
+- Add runnable Compose samples for Android, iOS, JVM desktop, JS, and WasmJS that share text, links, and a batch of attachments.
+
 ## 0.7.0 — 2026-11-17
 
 - Share one or more files, including encoded images, from common Kotlin using `ShareFile`, `ShareFilesRequest`, and `ShareKit.shareFiles`.

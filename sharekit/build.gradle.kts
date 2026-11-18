@@ -88,55 +88,13 @@ kotlin {
 }
 
 mavenPublishing {
+    coordinates(artifactId = "kmp-sharekit")
     configureBasedOnAppliedPlugins(javadocJar = JavadocJar.Dokka("dokkaGeneratePublicationHtml"))
-    // Remote publication is an explicit release workflow step.
-    publishToMavenCentral(automaticRelease = false)
     pom {
         name.set("ShareKit")
         description.set(
             "Text, URL, and file sharing for Kotlin Multiplatform on Android, iOS, JVM desktop, and supported browsers (JS/WasmJS).",
         )
-        url.set("https://github.com/vladleesi/kmp-sharekit")
-        licenses {
-            license {
-                name.set("The Apache License, Version 2.0")
-                url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
-                distribution.set("repo")
-            }
-        }
-        developers {
-            developer {
-                id.set("vladleesi")
-                name.set("Vladislav Kochetov")
-                url.set("https://github.com/vladleesi")
-            }
-        }
-        scm {
-            url.set("https://github.com/vladleesi/kmp-sharekit")
-            connection.set("scm:git:https://github.com/vladleesi/kmp-sharekit.git")
-            developerConnection.set("scm:git:ssh://git@github.com/vladleesi/kmp-sharekit.git")
-            tag.set("v${project.version}")
-        }
-    }
-}
-
-publishing {
-    repositories {
-        maven {
-            name = "validation"
-            url =
-                layout.buildDirectory
-                    .dir("maven-repository")
-                    .get()
-                    .asFile
-                    .toURI()
-        }
-    }
-}
-
-tasks.withType<Jar>().configureEach {
-    from(rootProject.file("LICENSE")) {
-        into("META-INF")
     }
 }
 

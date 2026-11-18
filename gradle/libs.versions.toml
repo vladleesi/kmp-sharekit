@@ -8,15 +8,23 @@ robolectric = "4.17"
 androidx-core = "1.19.1"
 maven-publish = "0.37.0"
 dokka = "2.3.0"
+compose = "1.12.2"
+androidx-activity = "1.12.4"
 # Browser test tooling: satisfy schema-utils' peer range and keep a single webpack instance.
 webpack = "5.112.2"
 
 [libraries]
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 androidx-core = { module = "androidx.core:core", version.ref = "androidx-core" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
+compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "compose" }
+compose-material = { module = "org.jetbrains.compose.material:material", version.ref = "compose" }
 
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+jetbrains-compose = { id = "org.jetbrains.compose", version.ref = "compose" }
+android-application = { id = "com.android.application", version.ref = "agp" }
 android-multiplatform = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint-plugin" }
 maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "maven-publish" }

@@ -145,6 +145,6 @@ jobs:
               exit 1
             fi
           done
-          ./gradlew :sharekit:publishAllPublicationsToValidationRepository -Psharekit.windowsNativeDir="$RUNNER_TEMP/sharekit-windows" --no-configuration-cache --no-daemon
+          ./gradlew publishAllPublicationsToValidationRepository -Psharekit.windowsNativeDir="$RUNNER_TEMP/sharekit-windows" --no-configuration-cache --no-daemon
           python3 .github/scripts/verify-publications.py --signed
-          ./gradlew :sharekit:publishAndReleaseToMavenCentral -Psharekit.windowsNativeDir="$RUNNER_TEMP/sharekit-windows" --no-configuration-cache --no-daemon
+          ./gradlew publishAndReleaseToMavenCentral -Psharekit.windowsNativeDir="$RUNNER_TEMP/sharekit-windows" --no-configuration-cache --no-daemon

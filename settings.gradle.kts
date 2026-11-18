@@ -15,4 +15,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "kmp-sharekit"
-include(":sharekit")
+include(":sharekit", ":sharekit-compose", ":samples:compose", ":samples:android")

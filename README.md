@@ -1,6 +1,6 @@
 # ShareKit
 
-Text, URL, and file sharing for Kotlin Multiplatform on Android, iOS, JVM desktop, and browsers. Use it from shared Kotlin or Compose UI. The library has no Compose or coroutine dependency.
+Text, URL, and file sharing for Kotlin Multiplatform on Android, iOS, JVM desktop, and browsers. Use it from shared Kotlin or Compose UI. The core library runs independently of Compose and coroutines.
 
 [![Maven Central](https://img.shields.io/maven-central/v/dev.vladleesi/kmp-sharekit)](https://central.sonatype.com/artifact/dev.vladleesi/kmp-sharekit)
 [![Build](https://github.com/vladleesi/kmp-sharekit/actions/workflows/ci.yml/badge.svg)](https://github.com/vladleesi/kmp-sharekit/actions/workflows/ci.yml)
@@ -12,7 +12,7 @@ Use Kotlin 2.4.21+ and `mavenCentral()`. Include `google()` for Android dependen
 ```kotlin
 kotlin {
     sourceSets.commonMain.dependencies {
-        implementation("dev.vladleesi:kmp-sharekit:0.7.0")
+        implementation("dev.vladleesi:kmp-sharekit:0.8.0")
     }
 }
 ```
@@ -66,28 +66,39 @@ ShareKit.shareFiles(request, onResult)
 
 `ShareFile` copies the supplied bytes. Load and encode them before the UI action. `canShareFiles(request)` checks the platform and payload without launching UI or requiring a browser gesture. Call `shareFiles` directly from a browser gesture. Browser support varies by file type and size. Linux email sharing has no attachment support, and iOS file requests accept optional text only. Apple and Windows use filename extensions to identify file types. Android and JVM desktop stage temporary files for the receiving app.
 
-## Compose example
+## Compose integration
 
-Use the same request API from `commonMain`. Pass the result to your app's error or status UI:
+Add `dev.vladleesi:kmp-sharekit-compose:0.8.0` to your Compose module. It includes ShareKit and exposes observable sharing state for your existing UI.
 
 ```kotlin
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import dev.vladleesi.kmpsharekit.ShareKit
+import dev.vladleesi.kmpsharekit.ShareRequest
+import dev.vladleesi.kmpsharekit.ShareResult
+import dev.vladleesi.kmpsharekit.compose.rememberShareState
 
 @Composable
-fun ShareButton(text: String, onResult: (ShareResult) -> Unit) {
+fun ShareButton(text: String) {
     val request = ShareRequest(text = text)
+    val sharing = rememberShareState()
     Button(
-        enabled = ShareKit.canShare(request),
-        onClick = { ShareKit.share(request, onResult) },
+        enabled = !sharing.isSharing && ShareKit.canShare(request),
+        onClick = { sharing.share(request) },
     ) {
         Text("Share")
+    }
+    val result = sharing.result
+    if (result is ShareResult.Failed) {
+        Text("Sharing failed: ${result.reason}")
     }
 }
 ```
 
-`canShare(request)` checks content and capability, not whether a host or share target is ready. Always handle failures. Your app can offer a Copy action when sharing is unavailable; ShareKit does not copy content or switch to email automatically.
+Use `sharing.shareFiles(request)` for attachments. Start shares directly from the click handler to preserve browser user activation. The Compose artifact supports Android, JVM desktop (Java 11+), iOS devices and Apple Silicon simulators, JS, and WasmJS. The core artifact also supports Intel iOS simulators.
+
+Try the [interactive samples](samples/README.md) on Android, iOS, desktop, and the browser.
 
 ## Platforms
 

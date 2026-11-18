@@ -4,7 +4,6 @@ Upcoming ShareKit features. Scope and version numbers may change; release dates 
 
 | Version | Features |
 | --- | --- |
-| 0.8.0 | Optional Compose integration and interactive samples |
 | 1.0.0 | Stable API, compatibility policy, and migration guide |
 
 See the [changelog](CHANGELOG.md) for release history.

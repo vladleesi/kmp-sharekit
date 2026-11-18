@@ -1,0 +1,13 @@
+public final class dev/vladleesi/kmpsharekit/compose/ShareState {
+	public static final field $stable I
+	public final fun clearResult ()V
+	public final fun getResult ()Ldev/vladleesi/kmpsharekit/ShareResult;
+	public final fun isSharing ()Z
+	public final fun share (Ldev/vladleesi/kmpsharekit/ShareRequest;)V
+	public final fun shareFiles (Ldev/vladleesi/kmpsharekit/ShareFilesRequest;)V
+}
+
+public final class dev/vladleesi/kmpsharekit/compose/ShareStateKt {
+	public static final fun rememberShareState (Landroidx/compose/runtime/Composer;I)Ldev/vladleesi/kmpsharekit/compose/ShareState;
+}
+
