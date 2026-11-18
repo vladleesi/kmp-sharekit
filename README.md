@@ -1,76 +1,113 @@
 # ShareKit
 
-Text, URL, and file sharing for Kotlin Multiplatform on Android, iOS, JVM desktop, and browsers. Use it from shared Kotlin or Compose UI. The core library runs independently of Compose and coroutines.
+Share text, links, and files from Kotlin Multiplatform apps on Android, iOS, desktop, and the web.
 
 [![Maven Central](https://img.shields.io/maven-central/v/dev.vladleesi/kmp-sharekit)](https://central.sonatype.com/artifact/dev.vladleesi/kmp-sharekit)
-[![Build](https://github.com/vladleesi/kmp-sharekit/actions/workflows/ci.yml/badge.svg)](https://github.com/vladleesi/kmp-sharekit/actions/workflows/ci.yml)
+[![CI](https://github.com/vladleesi/kmp-sharekit/actions/workflows/ci.yml/badge.svg)](https://github.com/vladleesi/kmp-sharekit/actions/workflows/ci.yml)
 
 ## Install
 
-Use Kotlin 2.4.21+ and `mavenCentral()`. Include `google()` for Android dependencies. Add to your shared module:
+Use Kotlin 2.4.21 or later. Add these dependency repositories in `settings.gradle.kts`.
+
+```kotlin
+dependencyResolutionManagement {
+    repositories {
+        google() // AndroidX dependencies
+        mavenCentral()
+    }
+}
+```
+
+In your shared module’s `build.gradle.kts`, add ShareKit to `commonMain`.
 
 ```kotlin
 kotlin {
     sourceSets.commonMain.dependencies {
-        implementation("dev.vladleesi:kmp-sharekit:0.8.0")
+        implementation("dev.vladleesi:kmp-sharekit:0.7.0")
     }
 }
 ```
 
-## Share
+## Platform setup
 
-Call from your UI action (directly from a click/tap handler in browsers):
+| Platform | Setup | Share types |
+| --- | --- | --- |
+| Android 23+ | Register the current Activity and call on the main thread | Text, links, files |
+| iOS 15+ | Call on the main thread with a visible view controller | Text, links, files |
+| macOS 13+ | Use an active window and package the [macOS native library](docs/macos.md) | Text, links, files |
+| Windows 10 1607+ / 11 | Use an x64 JVM and a foreground window. Package the [Windows native library](docs/windows.md) | Text, links, files |
+| Linux desktop | Use a graphical session with a configured mail client | Text and links in an email draft |
+| Browser (JS / WasmJS) | Use a secure context and a browser with Web Share support. Call directly from a click or tap | Text, links, supported files |
+
+On Android, register the Activity in `onResume()`.
 
 ```kotlin
-import dev.vladleesi.kmpsharekit.ShareKit
-import dev.vladleesi.kmpsharekit.ShareRequest
+override fun onResume() {
+    super.onResume()
+    ShareKit.setActivity(this)
+}
+```
+
+On iOS, ShareKit finds the visible view controller automatically. Leave the optional `title` field unset.
+
+## Usage
+
+Use this helper to handle the result of any share action.
+
+```kotlin
 import dev.vladleesi.kmpsharekit.ShareResult
 
-ShareKit.share(ShareRequest(text = "Take a look", url = "https://example.com")) { result ->
-    when (result) {
-        is ShareResult.Failed -> println("Sharing failed: ${result.reason}")
-        ShareResult.Cancelled, ShareResult.CancelledOrUnavailable -> Unit
-        ShareResult.Launched, ShareResult.Completed -> Unit
-    }
+fun ShareResult.statusMessage(): String? = when (this) {
+    ShareResult.Launched -> "Sharing started."
+    ShareResult.Completed -> "Share action completed."
+    ShareResult.Cancelled -> null
+    ShareResult.CancelledOrUnavailable -> "Sharing was cancelled or no share target was available."
+    is ShareResult.Failed -> "Sharing failed ($reason)."
 }
 ```
 
-Requests accept text, an HTTP(S) URL, or both. An optional `title` is supported on Android, desktop, and browsers; iOS rejects requests containing a title. Cancellation is not an error, and launch/completion does not confirm delivery to a recipient.
+`Failed.reason` identifies the failure category, and `Failed.cause` may contain platform details. `Launched` and `Completed` leave delivery to the recipient unverified.
 
-For simple text sharing without a result callback:
-
-```kotlin
-ShareKit.shareText("Hello from shared Kotlin!")
-```
-
-On JVM, this legacy call opens an email draft. Use `share(request)` for native macOS/Windows sharing and typed failures.
-
-## Share files and images
-
-Supply each file's bytes, filename with extension, and MIME type. Use a single-item list to share one file.
+Pick a call for your share button in shared Kotlin.
 
 ```kotlin
 import dev.vladleesi.kmpsharekit.ShareFile
 import dev.vladleesi.kmpsharekit.ShareFilesRequest
+import dev.vladleesi.kmpsharekit.ShareKit
+import dev.vladleesi.kmpsharekit.ShareRequest
+import dev.vladleesi.kmpsharekit.ShareResult
 
-val request = ShareFilesRequest(
-    files = listOf(
-        ShareFile("photo.png", "image/png", pngBytes),
-        ShareFile("notes.pdf", "application/pdf", pdfBytes),
-    ),
-    text = "Photos and notes from the trip",
-)
-// In your click or tap handler
-ShareKit.shareFiles(request, onResult)
+val onResult: (ShareResult) -> Unit = { result ->
+    result.statusMessage()?.let { println(it) }
+}
+
+// Text
+ShareKit.share(ShareRequest(text = "Meet at 6"), onResult)
+
+// Link with optional text
+ShareKit.share(ShareRequest(url = "https://example.com", text = "Event details"), onResult)
+
+// File
+val notes = ShareFile("notes.txt", "text/plain", "Meet at 6".encodeToByteArray())
+ShareKit.shareFiles(ShareFilesRequest(listOf(notes)), onResult)
 ```
 
-`ShareFile` copies the supplied bytes. Load and encode them before the UI action. `canShareFiles(request)` checks the platform and payload without launching UI or requiring a browser gesture. Call `shareFiles` directly from a browser gesture. Browser support varies by file type and size. Linux email sharing has no attachment support, and iOS file requests accept optional text only. Apple and Windows use filename extensions to identify file types. Android and JVM desktop stage temporary files for the receiving app.
+For an image, pass encoded bytes with a matching name and MIME type, such as `ShareFile("photo.png", "image/png", pngBytes)`. Add more entries to share multiple files. Check `canShare(request)` or `canShareFiles(request)` before showing the share button if support varies.
 
-## Compose integration
+To open an email draft explicitly from JVM code, call `ShareKit.share(request, ShareMethod.EMAIL, onResult)`.
 
-Add `dev.vladleesi:kmp-sharekit-compose:0.8.0` to your Compose module. It includes ShareKit and exposes observable sharing state for your existing UI.
+## Compose Multiplatform
+
+Add the Compose adapter to `commonMain.dependencies`. It includes the core library. [Maven Central](https://central.sonatype.com/artifact/dev.vladleesi/kmp-sharekit-compose)
 
 ```kotlin
+implementation("dev.vladleesi:kmp-sharekit-compose:0.8.0")
+```
+
+This example uses Compose Material 3. The button is enabled when the request can be shared, and failures appear below it.
+
+```kotlin
+import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -83,66 +120,21 @@ import dev.vladleesi.kmpsharekit.compose.rememberShareState
 fun ShareButton(text: String) {
     val request = ShareRequest(text = text)
     val sharing = rememberShareState()
-    Button(
-        enabled = !sharing.isSharing && ShareKit.canShare(request),
-        onClick = { sharing.share(request) },
-    ) {
-        Text("Share")
+    Column {
+        Button(
+            enabled = !sharing.isSharing && ShareKit.canShare(request),
+            onClick = { sharing.share(request) },
+        ) {
+            Text("Share")
+        }
+        val result = sharing.result
+        if (result is ShareResult.Failed) {
+            Text("Sharing failed: ${result.reason}")
+        }
     }
-    val result = sharing.result
-    if (result is ShareResult.Failed) {
-        Text("Sharing failed: ${result.reason}")
-    }
 }
 ```
 
-Use `sharing.shareFiles(request)` for attachments. Start shares directly from the click handler to preserve browser user activation. The Compose artifact supports Android, JVM desktop (Java 11+), iOS devices and Apple Silicon simulators, JS, and WasmJS. The core artifact also supports Intel iOS simulators.
+Use `sharing.shareFiles(filesRequest)` in `onClick` to share attachments.
 
-Try the [interactive samples](samples/README.md) on Android, iOS, desktop, and the browser.
-
-## Platforms
-
-| Platform | Sharing | Setup |
-| --- | --- | --- |
-| Android 23+ | Native share sheet | Register your Activity below; call on the main thread |
-| iOS 15+ | Native share sheet, including iPad | Visible view controller; call on the main thread |
-| JVM desktop | Native sharing on macOS 13+ and Windows 10 1607+ (x64 JVM); email on Linux | [macOS](docs/macos.md) / [Windows packaging](docs/windows.md), or a configured mail client |
-| JS / WasmJS | Web Share API | Supported browser, HTTPS, and a user gesture |
-
-Android: register the current Activity when it resumes:
-
-```kotlin
-override fun onResume() {
-    super.onResume()
-    ShareKit.setActivity(this)
-}
-```
-
-Alternatively, use `ShareKit.shareText(activity, text)` from Android code. iOS needs no registration with a visible view controller, including `ComposeUIViewController`.
-
-Browsers require Web Share support; not every desktop or mobile browser provides it. Call directly from the click handler, before suspending or starting network work. WasmJS also needs a compatible Kotlin/Wasm browser runtime.
-
-## Desktop sharing
-
-On macOS, `share(request)` presents a picker anchored in the active window. Package the native library using the [macOS setup guide](docs/macos.md). Dismissing the picker reports `Cancelled`; selecting a service reports `Launched`. The service's later outcome is not observed.
-
-On Windows, `share(request)` opens the Windows share panel for the foreground window belonging to your application. Package the x64 DLL using the [Windows setup guide](docs/windows.md). A successful panel launch reports `Launched`; subsequent selection, cancellation, and delivery are not observed.
-
-Linux opens an email draft through the default mail client. On any desktop, select email explicitly from `jvmMain`:
-
-```kotlin
-import dev.vladleesi.kmpsharekit.ShareMethod
-
-ShareKit.share(
-    request = ShareRequest(text = "Hello", title = "A quick note"),
-    method = ShareMethod.EMAIL,
-) { result ->
-    // Handle launch or failure; the user still chooses recipients and sends.
-}
-```
-
-Use `ShareKit.capabilities(ShareMethod.EMAIL)` to check email support. Desktop sharing needs a graphical environment; email also requires a configured mail client.
-
-For projects with unsupported targets, add ShareKit to a source set shared only by supported targets.
-
-[Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md) · [Roadmap](ROADMAP.md) · [Apache 2.0](LICENSE)
+[Runnable samples](samples/README.md) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md) · [Roadmap](ROADMAP.md) · [Apache 2.0](LICENSE)
