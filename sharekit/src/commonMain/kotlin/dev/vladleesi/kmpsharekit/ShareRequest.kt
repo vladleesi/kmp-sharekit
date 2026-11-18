@@ -16,7 +16,7 @@ public data class ShareCapabilities(
     public val supportsTitle: Boolean,
 )
 
-/** Portable failure categories. [ShareResult.Failed.cause] preserves platform details when available. */
+/** Portable failure categories. The set of entries is stable throughout 1.x. [ShareResult.Failed.cause] preserves platform details when available. */
 public enum class ShareFailure {
     UNAVAILABLE,
     INVALID_REQUEST,
@@ -29,7 +29,7 @@ public enum class ShareFailure {
     PLATFORM_ERROR,
 }
 
-/** One terminal observation per request. No outcome guarantees delivery to a recipient. */
+/** One terminal observation per request. The set of outcomes is stable throughout 1.x. No outcome guarantees delivery to a recipient. */
 public sealed interface ShareResult {
     /** Android chooser, Windows share panel, or desktop mail composer launched, or macOS service selected; later outcome is unknown. */
     public data object Launched : ShareResult

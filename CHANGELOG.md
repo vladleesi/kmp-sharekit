@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.0 — 2026-11-18
+
+- Speed up browser attachment sharing on JS and WasmJS by passing binary data directly and reusing each browser file across capability checks and share calls.
+- Document the 1.x compatibility policy for exhaustive Kotlin `when` expressions over `ShareResult` and `ShareFailure` in core and Compose.
+
 ## 0.8.0
 
 - Publish an optional `kmp-sharekit-compose` artifact with `rememberShareState()` for observable sharing progress and results.

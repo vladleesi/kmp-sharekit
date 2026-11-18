@@ -2,9 +2,9 @@
 
 package dev.vladleesi.kmpsharekit
 
-import kotlin.io.encoding.Base64
 import kotlin.js.JsAny
 import kotlin.js.js
+import kotlin.js.toJsReference
 
 public actual object ShareKit {
     private var sharing = false
@@ -207,23 +207,42 @@ private fun browserData(
 
 private fun ShareFilesRequest.browserData(): JsAny =
     browserData(text, null, title).also { data ->
-        files.forEach { file -> addBrowserFile(data, file.name, file.mimeType, Base64.encode(file.bytes)) }
+        files.forEach { file -> appendFile(data, file.browserFile()) }
     }
 
-private fun addBrowserFile(
-    data: JsAny,
+// A live ShareFile can reuse its immutable File across capability checks and launches.
+private val browserFiles: JsAny = js("new WeakMap()")
+
+private fun ShareFile.browserFile(): JsAny {
+    val key = toJsReference()
+    return cachedFile(browserFiles, key) ?: createBrowserFile(name, mimeType, bytes.browserBytes()).also {
+        cacheFile(browserFiles, key, it)
+    }
+}
+
+private fun cachedFile(
+    cache: JsAny,
+    key: JsAny,
+): JsAny? = js("cache.get(key) || null")
+
+private fun cacheFile(
+    cache: JsAny,
+    key: JsAny,
+    file: JsAny,
+): Unit = js("{ cache.set(key, file); }")
+
+internal expect fun ByteArray.browserBytes(): JsAny
+
+private fun createBrowserFile(
     name: String,
     mimeType: String,
-    encoded: String,
-): Unit =
-    js(
-        """{
-    const decoded = atob(encoded);
-    const bytes = Uint8Array.from(decoded, character => character.charCodeAt(0));
-    if (!data.files) data.files = [];
-    data.files.push(new File([bytes], name, { type: mimeType }));
-}""",
-    )
+    bytes: JsAny,
+): JsAny = js("new File([bytes], name, { type: mimeType })")
+
+private fun appendFile(
+    data: JsAny,
+    file: JsAny,
+): Unit = js("{ if (!data.files) data.files = []; data.files.push(file); }")
 
 private fun supportsBrowserFiles(): Boolean = js("typeof File === 'function' && typeof navigator.canShare === 'function'")
 

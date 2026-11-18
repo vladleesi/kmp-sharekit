@@ -41,6 +41,8 @@ Before releases, run the [packaged macOS check](checks/macos/README.md), review 
 
 `VERSION_NAME` in `gradle.properties` is the only release version setting. ShareKit follows semantic versioning independently of Kotlin and Android tooling. Before a release, update it and `CHANGELOG.md`, and keep README installation examples current. Regenerate both npm lockfiles with `./gradlew kotlinUpgradePackageLock kotlinWasmUpgradePackageLock --rerun-tasks`; run `python3 .github/scripts/check-release-version.py` and commit the lockfiles with the version bump. Release tags use `v<version>` (first release: `v0.1.0`).
 
+For 1.x releases, preserve exhaustive Kotlin `when` expressions over `ShareResult` and `ShareFailure` in both core and Compose. Adding, removing, renaming, or redefining a case requires a major release. Map new platform errors to the closest documented category, using `PLATFORM_ERROR` for unclassified errors and retaining the underlying cause when available. The shared Compose sample exercises both exhaustive expressions in CI.
+
 Renovate uses the [shared preset](https://github.com/vladleesi/renovate-config) to report updates in its Dependency Dashboard. Updates require dashboard approval and target `develop`; automerge is disabled.
 
 ## Publishing

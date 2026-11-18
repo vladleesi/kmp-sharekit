@@ -23,7 +23,7 @@ In your shared module’s `build.gradle.kts`, add ShareKit to `commonMain`.
 ```kotlin
 kotlin {
     sourceSets.commonMain.dependencies {
-        implementation("dev.vladleesi:kmp-sharekit:0.7.0")
+        implementation("dev.vladleesi:kmp-sharekit:0.9.0")
     }
 }
 ```
@@ -68,6 +68,8 @@ fun ShareResult.statusMessage(): String? = when (this) {
 
 `Failed.reason` identifies the failure category, and `Failed.cause` may contain platform details. `Launched` and `Completed` leave delivery to the recipient unverified.
 
+Core and Compose callers can handle every `ShareResult` and `ShareFailure` in an exhaustive `when`. During 1.x, adding, removing, or renaming an outcome or failure category requires a major release. New platform errors map to the existing categories, with additional details available through `Failed.cause`.
+
 Pick a call for your share button in shared Kotlin.
 
 ```kotlin
@@ -101,7 +103,7 @@ To open an email draft explicitly from JVM code, call `ShareKit.share(request, S
 Add the Compose adapter to `commonMain.dependencies`. It includes the core library. [Maven Central](https://central.sonatype.com/artifact/dev.vladleesi/kmp-sharekit-compose)
 
 ```kotlin
-implementation("dev.vladleesi:kmp-sharekit-compose:0.8.0")
+implementation("dev.vladleesi:kmp-sharekit-compose:0.9.0")
 ```
 
 This example uses Compose Material 3. The button is enabled when the request can be shared, and failures appear below it.

@@ -11,7 +11,7 @@ For a local run, extract the library into a build directory:
 ```sh
 mkdir -p build/sharekit-native
 cd build/sharekit-native
-jar xf /path/to/kmp-sharekit-jvm-0.8.0.jar native/macos/libsharekit.dylib
+jar xf /path/to/kmp-sharekit-jvm-0.9.0.jar native/macos/libsharekit.dylib
 ```
 
 Launch the JVM with `-Djava.library.path=/absolute/path/to/build/sharekit-native/native/macos`. Set the path at JVM startup; changing the property after launch does not update the JVM's native search path.

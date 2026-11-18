@@ -19,6 +19,7 @@ class ShareKitTest {
     @Test
     fun checksFilesSeparatelyBeforeCombiningWithText() {
         val request = ShareFilesRequest(listOf(ShareFile("notes.txt", "text/plain", byteArrayOf(10))), text = "Notes")
+        assertTrue(ShareKit.canShareFiles(request))
         configureCanShare("missing")
         assertFalse(ShareKit.canShareFiles(request))
         rejectFileOnlyPayloads()
@@ -35,6 +36,7 @@ class ShareKitTest {
                 listOf(ShareFile("photo.png", "image/png", bytes), ShareFile("empty.txt", "text/plain", byteArrayOf())),
                 text = "Files",
             )
+        observeCheckedFiles()
         bytes.fill(0)
         assertTrue(ShareKit.canShareFiles(request))
         var result: ShareResult? = null
@@ -42,8 +44,22 @@ class ShareKitTest {
         assertEquals(1, shareCalls())
         assertEquals("Files", sharedText())
         assertTrue(hasExpectedFiles())
+        assertTrue(sharedCheckedFiles())
         return afterReadingFirstFile { actual ->
             assertEquals("255,0,1", actual)
+            assertEquals(ShareResult.Completed, result)
+        }
+    }
+
+    @Test
+    fun sharesEveryByteAcrossMultipleTransferChunks(): Promise<JsAny?> {
+        val size = 2 * 65536 + 17
+        val bytes = ByteArray(size) { (it % 251).toByte() }
+        val request = ShareFilesRequest(listOf(ShareFile("batch.bin", "application/octet-stream", bytes)))
+        var result: ShareResult? = null
+        ShareKit.shareFiles(request) { result = it }
+        return checkSharedBytes(size) { matches ->
+            assertTrue(matches)
             assertEquals(ShareResult.Completed, result)
         }
     }
@@ -423,6 +439,18 @@ private fun hasRichFields(): Boolean =
 
 private fun rejectFileOnlyPayloads(): Unit = js("{ navigator.canShare = data => data.text === 'Notes'; }")
 
+private fun observeCheckedFiles(): Unit =
+    js(
+        """{ navigator.canShare = data => {
+        const state = globalThis.__shareKitTest;
+        if (!state.firstFiles) state.firstFiles = data.files.slice();
+        return true;
+    }; }""",
+    )
+
+private fun sharedCheckedFiles(): Boolean =
+    js("globalThis.__shareKitTest.data.files.every((file, i) => file === globalThis.__shareKitTest.firstFiles[i])")
+
 private fun hasExpectedFiles(): Boolean =
     js(
         """{
@@ -431,6 +459,18 @@ private fun hasExpectedFiles(): Boolean =
         && files[0].name === 'photo.png' && files[0].type === 'image/png'
         && files[1].name === 'empty.txt' && files[1].type === 'text/plain' && files[1].size === 0;
 }""",
+    )
+
+private fun checkSharedBytes(
+    size: Int,
+    check: (Boolean) -> Unit,
+): Promise<JsAny?> =
+    js(
+        """globalThis.__shareKitTest.data.files[0].arrayBuffer().then(buffer => {
+        const bytes = new Uint8Array(buffer);
+        check(bytes.length === size && bytes.every((value, index) => value === index % 251));
+        return null;
+    })""",
     )
 
 private fun afterReadingFirstFile(check: (String) -> Unit): Promise<JsAny?> =
