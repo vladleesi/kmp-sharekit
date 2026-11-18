@@ -1,4 +1,6 @@
 #include "../../../jvmMain/native/windows/ShareKit.cpp"
+#include <filesystem>
+#include <fstream>
 #include <future>
 #include <iostream>
 #include <thread>
@@ -6,6 +8,29 @@
 static void require(bool condition, char const* message) {
     if (!condition) throw std::runtime_error(message);
 }
+
+struct Attachment {
+    wchar_t path[MAX_PATH]{};
+
+    explicit Attachment(char const* contents) {
+        wchar_t directory[MAX_PATH];
+        DWORD length = GetTempPathW(MAX_PATH, directory);
+        require(length > 0 && length < MAX_PATH, "Missing temporary directory");
+        require(GetTempFileNameW(directory, L"sk", 0, path) != 0, "Unable to create an attachment fixture");
+        std::ofstream file(std::filesystem::path(path), std::ios::binary);
+        file << contents;
+        file.close();
+        if (!file) {
+            DeleteFileW(path);
+            throw std::runtime_error("Unable to write an attachment fixture");
+        }
+    }
+
+    ~Attachment() { DeleteFileW(path); }
+
+    Attachment(Attachment const&) = delete;
+    Attachment& operator=(Attachment const&) = delete;
+};
 
 int main() {
     try {
@@ -22,19 +47,24 @@ int main() {
         DataPackage fallback;
         Payload{L"Text", {}, {}}.populate(fallback);
         require(fallback.GetView().Properties().Title() == L"Share", "Missing default title");
-        wchar_t executable[MAX_PATH];
-        DWORD executableLength = GetModuleFileNameW(nullptr, executable, MAX_PATH);
-        require(executableLength > 0 && executableLength < MAX_PATH, "Missing test executable");
-        wchar_t systemDirectory[MAX_PATH];
-        UINT directoryLength = GetSystemDirectoryW(systemDirectory, MAX_PATH);
-        require(directoryLength > 0 && directoryLength < MAX_PATH, "Missing system directory");
-        std::wstring modulePath(executable, executableLength);
-        std::wstring dllPath = std::wstring(systemDirectory, directoryLength) + L"\\kernel32.dll";
+        Attachment first("First attachment");
+        Attachment second("Second attachment");
+        auto firstName = std::filesystem::path(first.path).filename().wstring();
+        auto secondName = std::filesystem::path(second.path).filename().wstring();
         DataPackage attachments;
-        addFiles(attachments, {modulePath, dllPath}).get();
+        addFiles(attachments, {first.path, second.path}).get();
         auto items = attachments.GetView().GetStorageItemsAsync().get();
         require(items.Size() == 2, "Storage items missing");
-        require(items.GetAt(0).Path() == modulePath && items.GetAt(1).Path() == dllPath, "File paths or order changed");
+        bool receivedFirst = false;
+        bool receivedSecond = false;
+        for (auto const& item : items) {
+            auto file = item.as<StorageFile>();
+            auto name = file.Name();
+            auto contents = FileIO::ReadTextAsync(file).get();
+            receivedFirst |= name == firstName && contents == L"First attachment";
+            receivedSecond |= name == secondName && contents == L"Second attachment";
+        }
+        require(receivedFirst && receivedSecond, "Share data did not preserve both attachment names and contents");
         require(!usableHost(nullptr), "Null host accepted");
 
         std::promise<HWND> ready;
