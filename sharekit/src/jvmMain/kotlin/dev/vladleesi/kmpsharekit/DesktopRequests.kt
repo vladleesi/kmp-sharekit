@@ -46,6 +46,49 @@ internal class DesktopRequests(
             email.share(request, onResult)
             return
         }
+        shareNative(onResult) { nativeShare(request, it) }
+    }
+
+    fun canShareFiles(request: ShareFilesRequest): Boolean = filesFailure(request) == null
+
+    fun shareFiles(
+        request: ShareFilesRequest,
+        onResult: (ShareResult) -> Unit,
+    ) {
+        val failure = filesFailure(request)
+        if (failure != null) {
+            onResult(failure)
+            return
+        }
+        shareNative(onResult) { complete ->
+            val staged = StagedShareFiles(request.files)
+            val finish: (ShareResult) -> Unit = { result ->
+                if (result != ShareResult.Launched) staged.remove()
+                complete(result)
+            }
+            try {
+                if (mac) {
+                    MacSharingBridge.presentFiles(request.text, request.title, staged.paths, MacSharingCallback(finish))
+                } else {
+                    showWindowsPanel(finish) { WindowsSharingBridge.presentFiles(request.text, request.title, staged.paths) }
+                }
+            } catch (error: Exception) {
+                staged.remove()
+                throw error
+            } catch (error: LinkageError) {
+                staged.remove()
+                throw error
+            }
+        }
+    }
+
+    private fun filesFailure(request: ShareFilesRequest): ShareResult.Failed? =
+        request.failure(if (mac || windows) capabilities(ShareMethod.NATIVE) else ShareCapabilities(ShareMethod.EMAIL, true))
+
+    private fun shareNative(
+        onResult: (ShareResult) -> Unit,
+        present: ((ShareResult) -> Unit) -> Unit,
+    ) {
         if (!pending.compareAndSet(false, true)) {
             onResult(ShareResult.Failed(ShareFailure.BUSY))
             return
@@ -58,7 +101,7 @@ internal class DesktopRequests(
             }
         }
         try {
-            nativeShare(request, complete)
+            present(complete)
         } catch (error: Exception) {
             // A synchronous user callback must propagate, rather than become a second result.
             if (finished.get()) throw error
@@ -111,6 +154,13 @@ internal object MacSharingBridge {
         text: String?,
         url: String?,
         title: String?,
+        callback: MacSharingCallback,
+    )
+
+    external fun presentFiles(
+        text: String?,
+        title: String?,
+        paths: Array<String>,
         callback: MacSharingCallback,
     )
 }

@@ -8,6 +8,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
@@ -17,6 +18,36 @@ import kotlin.test.assertTrue
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [23, 37])
 class ShareKitTest {
+    @Test
+    @Suppress("DEPRECATION")
+    fun sharesFilesWithReadableContentUrisAndCorrectChooserActions() {
+        Robolectric.buildActivity(Activity::class.java).setup().use { controller ->
+            val activity = controller.get()
+            val bytes = byteArrayOf(0, -1, 2)
+            val image = ShareFile("a photo.png", "image/png", bytes)
+            val other = ShareFile("a photo.png", "image/jpeg", byteArrayOf(3))
+            ShareKit.shareFiles(activity, ShareFilesRequest(listOf(image))) { assertEquals(ShareResult.Launched, it) }
+            var chooser = assertNotNull(shadowOf(activity).nextStartedActivity)
+            var send = assertNotNull(chooser.getParcelableExtra<Intent>(Intent.EXTRA_INTENT))
+            assertEquals(Intent.ACTION_SEND, send.action)
+            assertEquals("image/png", send.type)
+
+            ShareKit.shareFiles(activity, ShareFilesRequest(listOf(image, other))) { assertEquals(ShareResult.Launched, it) }
+            chooser = assertNotNull(shadowOf(activity).nextStartedActivity)
+            send = assertNotNull(chooser.getParcelableExtra<Intent>(Intent.EXTRA_INTENT))
+            assertEquals(Intent.ACTION_SEND_MULTIPLE, send.action)
+            assertEquals("image/*", send.type)
+            assertTrue(send.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION != 0)
+            val clip = assertNotNull(send.clipData)
+            assertEquals(2, clip.itemCount)
+            assertEquals("content", clip.getItemAt(0).uri.scheme)
+            assertEquals("image/png", activity.contentResolver.getType(clip.getItemAt(0).uri))
+            assertEquals("image/jpeg", activity.contentResolver.getType(clip.getItemAt(1).uri))
+            assertContentEquals(bytes, activity.contentResolver.openInputStream(clip.getItemAt(0).uri)?.use { it.readBytes() })
+            assertContentEquals(byteArrayOf(3), activity.contentResolver.openInputStream(clip.getItemAt(1).uri)?.use { it.readBytes() })
+        }
+    }
+
     @Test
     fun richRequestUsesAndroidMetadataAndReportsLaunch() {
         Robolectric.buildActivity(Activity::class.java).setup().use { controller ->

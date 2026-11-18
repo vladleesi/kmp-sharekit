@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.0 — 2026-11-17
+
+- Share one or more files, including encoded images, from common Kotlin using `ShareFile`, `ShareFilesRequest`, and `ShareKit.shareFiles`.
+- Send files through the Android and iOS share sheets, native macOS and Windows pickers, and the Web Share API on supporting JS and WasmJS browsers.
+- Check file support with `ShareKit.canShareFiles`. Browser checks use the actual payload, and the Linux email method reports file attachments as unsupported.
+- Raise Android's minimum SDK to API 23 and update AndroidX Core to 1.19.1, AGP to 9.3.3, and Dokka to 2.3.0.
+
 ## 0.6.0 — 2026-11-16
 
 - Add native Windows sharing to the JVM request API through the Windows share panel, with text, HTTP(S) URLs, and optional titles.

@@ -1,10 +1,12 @@
 package dev.vladleesi.kmpsharekit
 
 import java.awt.EventQueue
+import java.io.File
 import java.io.IOException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
@@ -12,6 +14,37 @@ import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class DesktopRequestsTest {
+    @Test
+    fun emailOnlyDesktopReportsFileAttachmentsAsUnsupported() {
+        val sharing =
+            DesktopRequests(
+                mac = false,
+                windows = false,
+                email = DesktopSharing(canMail = { true }, mail = { error("Must not open email for files") }),
+                nativeAvailable = { error("Must not load a native bridge for files") },
+            )
+        val request = ShareFilesRequest(listOf(ShareFile("report.pdf", "application/pdf", byteArrayOf(1))))
+        assertFalse(sharing.canShareFiles(request))
+        sharing.shareFiles(request) { assertEquals(ShareResult.Failed(ShareFailure.UNSUPPORTED_CONTENT), it) }
+    }
+
+    @Test
+    fun stagedFilesPreserveBytesWithDuplicateNamesAndCanBeRemoved() {
+        val first = byteArrayOf(0, -1)
+        val staged =
+            StagedShareFiles(listOf(ShareFile("photo 🌍.png", "image/png", first), ShareFile("photo 🌍.png", "image/png", byteArrayOf())))
+        val files = staged.paths.map(::File)
+        try {
+            assertEquals(listOf("photo 🌍.png", "photo 🌍.png"), files.map { it.name })
+            assertEquals(2, files.distinct().size)
+            assertContentEquals(first, files.first().readBytes())
+            assertEquals(0L, files.last().length())
+        } finally {
+            staged.remove()
+        }
+        assertFalse(files.any { it.exists() })
+    }
+
     @Test
     fun macDefaultsToNativeAndEmailRemainsExplicit() {
         var nativeCalls = 0

@@ -22,6 +22,19 @@ int main() {
         DataPackage fallback;
         Payload{L"Text", {}, {}}.populate(fallback);
         require(fallback.GetView().Properties().Title() == L"Share", "Missing default title");
+        wchar_t executable[MAX_PATH];
+        DWORD executableLength = GetModuleFileNameW(nullptr, executable, MAX_PATH);
+        require(executableLength > 0 && executableLength < MAX_PATH, "Missing test executable");
+        wchar_t systemDirectory[MAX_PATH];
+        UINT directoryLength = GetSystemDirectoryW(systemDirectory, MAX_PATH);
+        require(directoryLength > 0 && directoryLength < MAX_PATH, "Missing system directory");
+        std::wstring modulePath(executable, executableLength);
+        std::wstring dllPath = std::wstring(systemDirectory, directoryLength) + L"\\kernel32.dll";
+        DataPackage attachments;
+        addFiles(attachments, {modulePath, dllPath}).get();
+        auto items = attachments.GetView().GetStorageItemsAsync().get();
+        require(items.Size() == 2, "Storage items missing");
+        require(items.GetAt(0).Path() == modulePath && items.GetAt(1).Path() == dllPath, "File paths or order changed");
         require(!usableHost(nullptr), "Null host accepted");
 
         std::promise<HWND> ready;

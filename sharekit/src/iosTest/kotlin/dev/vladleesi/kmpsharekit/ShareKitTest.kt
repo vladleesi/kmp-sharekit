@@ -4,6 +4,7 @@ package dev.vladleesi.kmpsharekit
 
 import kotlinx.cinterop.useContents
 import platform.CoreGraphics.CGRectMake
+import platform.Foundation.NSFileManager
 import platform.UIKit.UINavigationController
 import platform.UIKit.UITabBarController
 import platform.UIKit.UIView
@@ -18,9 +19,30 @@ import platform.darwin.dispatch_semaphore_wait
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class ShareKitTest {
+    @Test
+    fun stagesDistinctFileUrlsWithOriginalNamesAndRemovesFilesAfterUse() {
+        val file = ShareFile("photo 🌍.png", "image/png", byteArrayOf(0, -1, 10))
+        val empty = ShareFile(file.name, file.mimeType, byteArrayOf())
+        val staged = StagedShareFiles(listOf(file, empty))
+        val manager = NSFileManager.defaultManager
+        val paths = staged.urls.map { assertNotNull(it.path) }
+        try {
+            assertEquals(listOf(file.name, file.name), staged.urls.map { it.lastPathComponent })
+            assertEquals(2, paths.distinct().size)
+            assertEquals(3uL, manager.contentsAtPath(paths.first())?.length)
+            assertEquals(0uL, manager.contentsAtPath(paths.last())?.length)
+            assertTrue(staged.urls.all { it.isFileURL() })
+        } finally {
+            staged.remove()
+        }
+        assertFalse(paths.any { manager.fileExistsAtPath(it) })
+    }
+
     @Test
     fun requestCompletionIsReportedOnlyOnce() {
         val results = mutableListOf<ShareResult>()

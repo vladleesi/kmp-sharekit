@@ -15,7 +15,7 @@ kotlin {
     android {
         namespace = "dev.vladleesi.sharekit.consumer"
         compileSdk = 37
-        minSdk = 21
+        minSdk = 23
     }
     js { browser() }
     @OptIn(ExperimentalWasmDsl::class)

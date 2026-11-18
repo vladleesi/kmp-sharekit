@@ -16,6 +16,15 @@ public actual object ShareKit {
 
     public actual fun canShare(request: ShareRequest): Boolean = request.failure(capabilities()) == null
 
+    public actual fun canShareFiles(request: ShareFilesRequest): Boolean = requests.canShareFiles(request)
+
+    public actual fun shareFiles(
+        request: ShareFilesRequest,
+        onResult: (ShareResult) -> Unit,
+    ) {
+        requests.shareFiles(request, onResult)
+    }
+
     public actual fun share(
         request: ShareRequest,
         onResult: (ShareResult) -> Unit,

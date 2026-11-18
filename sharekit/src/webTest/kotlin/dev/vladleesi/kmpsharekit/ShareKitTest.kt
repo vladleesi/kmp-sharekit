@@ -17,6 +17,38 @@ import kotlin.test.assertTrue
 
 class ShareKitTest {
     @Test
+    fun checksFilesSeparatelyBeforeCombiningWithText() {
+        val request = ShareFilesRequest(listOf(ShareFile("notes.txt", "text/plain", byteArrayOf(10))), text = "Notes")
+        configureCanShare("missing")
+        assertFalse(ShareKit.canShareFiles(request))
+        rejectFileOnlyPayloads()
+        assertFalse(ShareKit.canShareFiles(request))
+        ShareKit.shareFiles(request) { assertEquals(ShareFailure.UNSUPPORTED_CONTENT, assertIs<ShareResult.Failed>(it).reason) }
+        assertEquals(0, shareCalls())
+    }
+
+    @Test
+    fun sharesMultipleRealBrowserFilesAndPreservesBinaryBytes(): Promise<JsAny?> {
+        val bytes = byteArrayOf(-1, 0, 1)
+        val request =
+            ShareFilesRequest(
+                listOf(ShareFile("photo.png", "image/png", bytes), ShareFile("empty.txt", "text/plain", byteArrayOf())),
+                text = "Files",
+            )
+        bytes.fill(0)
+        assertTrue(ShareKit.canShareFiles(request))
+        var result: ShareResult? = null
+        ShareKit.shareFiles(request) { result = it }
+        assertEquals(1, shareCalls())
+        assertEquals("Files", sharedText())
+        assertTrue(hasExpectedFiles())
+        return afterReadingFirstFile { actual ->
+            assertEquals("255,0,1", actual)
+            assertEquals(ShareResult.Completed, result)
+        }
+    }
+
+    @Test
     fun newApiHandlesMissingNavigatorAndUnavailableSharingWithoutLaunching() {
         removeNavigator()
         assertEquals(ShareMethod.UNAVAILABLE, ShareKit.capabilities().method)
@@ -388,6 +420,21 @@ private fun afterMicrotasks(assertions: () -> Unit): Promise<JsAny?> = js("Promi
 
 private fun hasRichFields(): Boolean =
     js("globalThis.__shareKitTest.data.url === 'https://example.com' && globalThis.__shareKitTest.data.title === 'Title'")
+
+private fun rejectFileOnlyPayloads(): Unit = js("{ navigator.canShare = data => data.text === 'Notes'; }")
+
+private fun hasExpectedFiles(): Boolean =
+    js(
+        """{
+    const files = globalThis.__shareKitTest.data.files;
+    return files.length === 2 && files.every(file => file instanceof File)
+        && files[0].name === 'photo.png' && files[0].type === 'image/png'
+        && files[1].name === 'empty.txt' && files[1].type === 'text/plain' && files[1].size === 0;
+}""",
+    )
+
+private fun afterReadingFirstFile(check: (String) -> Unit): Promise<JsAny?> =
+    js("globalThis.__shareKitTest.data.files[0].arrayBuffer().then(buffer => { check(new Uint8Array(buffer).join()); return null; })")
 
 private fun configureCanShare(mode: String): Unit =
     js(

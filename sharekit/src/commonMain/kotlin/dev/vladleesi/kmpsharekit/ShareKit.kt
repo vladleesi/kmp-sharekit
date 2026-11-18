@@ -1,6 +1,6 @@
 package dev.vladleesi.kmpsharekit
 
-/** Text and URL sharing. Call from the UI thread or a browser user gesture. */
+/** Text, URL, and file sharing. Call from the UI thread or a browser user gesture. */
 public expect object ShareKit {
     /** Reports the sharing method and supported request fields without opening UI. */
     public fun capabilities(): ShareCapabilities
@@ -17,6 +17,18 @@ public expect object ShareKit {
      */
     public fun share(
         request: ShareRequest,
+        onResult: (ShareResult) -> Unit,
+    )
+
+    /** Checks whether the platform accepts these files without requiring a host or user gesture. */
+    public fun canShareFiles(request: ShareFilesRequest): Boolean
+
+    /**
+     * Shares the files in one system share action. Call on the UI thread or directly in a browser gesture.
+     * Desktop file sharing uses the native picker on Windows and macOS. [onResult] receives one terminal result.
+     */
+    public fun shareFiles(
+        request: ShareFilesRequest,
         onResult: (ShareResult) -> Unit,
     )
 

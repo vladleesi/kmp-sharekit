@@ -2,6 +2,8 @@
 
 package dev.vladleesi.kmpsharekit
 
+import kotlin.io.encoding.Base64
+import kotlin.js.JsAny
 import kotlin.js.js
 
 public actual object ShareKit {
@@ -11,21 +13,53 @@ public actual object ShareKit {
         ShareCapabilities(if (isSupported()) ShareMethod.NATIVE else ShareMethod.UNAVAILABLE, true)
 
     public actual fun canShare(request: ShareRequest): Boolean =
-        request.failure(capabilities()) == null && canShareInBrowser(request.text, request.url, request.title)
+        request.failure(capabilities()) == null && canShareInBrowser(browserData(request.text, request.url, request.title), false)
 
     public actual fun share(
         request: ShareRequest,
         onResult: (ShareResult) -> Unit,
     ) {
+        share(request.failure(capabilities()), false, onResult) { browserData(request.text, request.url, request.title) }
+    }
+
+    public actual fun canShareFiles(request: ShareFilesRequest): Boolean =
+        request.failure(capabilities()) == null &&
+            supportsBrowserFiles() &&
+            canShareInBrowser(request.browserData(), true)
+
+    public actual fun shareFiles(
+        request: ShareFilesRequest,
+        onResult: (ShareResult) -> Unit,
+    ) {
+        share(request.failure(capabilities()), true, onResult) { request.browserData() }
+    }
+
+    private fun share(
+        invalid: ShareResult.Failed?,
+        hasFiles: Boolean,
+        onResult: (ShareResult) -> Unit,
+        createData: () -> JsAny,
+    ) {
         val failure =
-            request.failure(capabilities()) ?: when {
+            invalid ?: when {
                 sharing -> ShareResult.Failed(ShareFailure.BUSY)
                 !hasUserActivation() -> ShareResult.Failed(ShareFailure.USER_ACTIVATION_REQUIRED)
-                !canShareInBrowser(request.text, request.url, request.title) -> ShareResult.Failed(ShareFailure.UNSUPPORTED_CONTENT)
+                hasFiles && !supportsBrowserFiles() -> ShareResult.Failed(ShareFailure.UNSUPPORTED_CONTENT)
                 else -> null
             }
         if (failure != null) {
             onResult(failure)
+            return
+        }
+        val data =
+            try {
+                createData()
+            } catch (error: Exception) {
+                onResult(ShareResult.Failed(ShareFailure.PLATFORM_ERROR, error))
+                return
+            }
+        if (!canShareInBrowser(data, hasFiles)) {
+            onResult(ShareResult.Failed(ShareFailure.UNSUPPORTED_CONTENT))
             return
         }
         sharing = true
@@ -38,9 +72,7 @@ public actual object ShareKit {
             }
         }
         shareRequestInBrowser(
-            request.text,
-            request.url,
-            request.title,
+            data,
             { finish(ShareResult.Completed) },
             { name, message ->
                 finish(
@@ -158,35 +190,66 @@ internal actual fun validShareUrl(url: String): Boolean =
 }""",
     )
 
-private fun canShareInBrowser(
+private fun browserData(
     text: String?,
     url: String?,
     title: String?,
-): Boolean =
+): JsAny =
     js(
         """{
     const data = {};
     if (text !== null) data.text = text;
     if (url !== null) data.url = url;
     if (title !== null) data.title = title;
-    try { return typeof navigator.canShare !== 'function' || navigator.canShare(data); }
-    catch (_) { return false; }
+    return data;
+}""",
+    )
+
+private fun ShareFilesRequest.browserData(): JsAny =
+    browserData(text, null, title).also { data ->
+        files.forEach { file -> addBrowserFile(data, file.name, file.mimeType, Base64.encode(file.bytes)) }
+    }
+
+private fun addBrowserFile(
+    data: JsAny,
+    name: String,
+    mimeType: String,
+    encoded: String,
+): Unit =
+    js(
+        """{
+    const decoded = atob(encoded);
+    const bytes = Uint8Array.from(decoded, character => character.charCodeAt(0));
+    if (!data.files) data.files = [];
+    data.files.push(new File([bytes], name, { type: mimeType }));
+}""",
+    )
+
+private fun supportsBrowserFiles(): Boolean = js("typeof File === 'function' && typeof navigator.canShare === 'function'")
+
+private fun canShareInBrowser(
+    data: JsAny,
+    hasFiles: Boolean,
+): Boolean =
+    js(
+        """{
+    try {
+        if (hasFiles) {
+            if (!navigator.canShare({ files: data.files })) return false;
+            if (data.text === undefined && data.title === undefined) return true;
+        }
+        return typeof navigator.canShare !== 'function' || navigator.canShare(data);
+    } catch (_) { return false; }
 }""",
     )
 
 private fun shareRequestInBrowser(
-    text: String?,
-    url: String?,
-    title: String?,
+    data: JsAny,
     onSuccess: () -> Unit,
     onError: (String, String) -> Unit,
 ): Unit =
     js(
         """{
-    const data = {};
-    if (text !== null) data.text = text;
-    if (url !== null) data.url = url;
-    if (title !== null) data.title = title;
     const failure = (error) => onError(
         error && typeof error.name === 'string' ? error.name : 'Error',
         error && typeof error.message === 'string' ? error.message : 'Browser sharing failed.'

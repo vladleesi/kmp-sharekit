@@ -25,11 +25,7 @@ public actual object ShareKit {
         request: ShareRequest,
         onResult: (ShareResult) -> Unit,
     ) {
-        if (!NSThread.isMainThread) {
-            onResult(ShareResult.Failed(ShareFailure.WRONG_THREAD))
-            return
-        }
-        shareFromController(request, foregroundRootViewController(), onResult)
+        share(request, onResult, ::foregroundRootViewController)
     }
 
     /** Shares from the specified window's controller. */
@@ -38,27 +34,72 @@ public actual object ShareKit {
         presentingViewController: UIViewController,
         onResult: (ShareResult) -> Unit,
     ) {
-        shareFromController(request, presentingViewController, onResult)
+        share(request, onResult) { presentingViewController }
+    }
+
+    private fun share(
+        request: ShareRequest,
+        onResult: (ShareResult) -> Unit,
+        resolveController: () -> UIViewController?,
+    ) {
+        shareFromController(request.failure(capabilities()), resolveController, onResult) { presenter, finish ->
+            requestActivityViewController(request, presenter, finish)
+        }
+    }
+
+    public actual fun canShareFiles(request: ShareFilesRequest): Boolean = request.failure(capabilities()) == null
+
+    public actual fun shareFiles(
+        request: ShareFilesRequest,
+        onResult: (ShareResult) -> Unit,
+    ) {
+        shareFiles(request, onResult, ::foregroundRootViewController)
+    }
+
+    /** Shares files from a specific window's controller. */
+    public fun shareFiles(
+        request: ShareFilesRequest,
+        presentingViewController: UIViewController,
+        onResult: (ShareResult) -> Unit,
+    ) {
+        shareFiles(request, onResult) { presentingViewController }
+    }
+
+    private fun shareFiles(
+        request: ShareFilesRequest,
+        onResult: (ShareResult) -> Unit,
+        resolveController: () -> UIViewController?,
+    ) {
+        var staged: StagedShareFiles? = null
+        shareFromController(request.failure(capabilities()), resolveController, { result ->
+            staged?.remove()
+            onResult(result)
+        }) { presenter, finish ->
+            val files = StagedShareFiles(request.files)
+            staged = files
+            requestActivityViewController(listOfNotNull(request.text) + files.urls, presenter, finish)
+        }
     }
 
     private fun shareFromController(
-        request: ShareRequest,
-        controller: UIViewController?,
+        invalid: ShareResult.Failed?,
+        resolveController: () -> UIViewController?,
         onResult: (ShareResult) -> Unit,
+        createSheet: (UIViewController, (ShareResult) -> Unit) -> UIActivityViewController,
     ) {
         if (!NSThread.isMainThread) {
             onResult(ShareResult.Failed(ShareFailure.WRONG_THREAD))
             return
         }
-        request.failure(capabilities())?.let {
-            onResult(it)
+        if (invalid != null) {
+            onResult(invalid)
             return
         }
         if (sharing) {
             onResult(ShareResult.Failed(ShareFailure.BUSY))
             return
         }
-        val presenter = controller?.let(::visibleViewController)
+        val presenter = resolveController()?.let(::visibleViewController)
         if (presenter == null || presenter.view.window == null || presenter.isBeingDismissed()) {
             onResult(ShareResult.Failed(ShareFailure.HOST_UNAVAILABLE))
             return
@@ -78,7 +119,7 @@ public actual object ShareKit {
         }
         val failure =
             try {
-                val sheet = requestActivityViewController(request, presenter, finish)
+                val sheet = createSheet(presenter, finish)
                 presenter.presentViewController(sheet, animated = true, completion = null)
                 null
             } catch (error: Exception) {
@@ -167,10 +208,18 @@ internal fun requestActivityViewController(
     presenter: UIViewController,
     onResult: (ShareResult) -> Unit,
 ): UIActivityViewController =
-    UIActivityViewController(
+    requestActivityViewController(
         listOfNotNull(request.text, request.url?.let { NSURL.URLWithString(it) }),
-        null,
-    ).apply {
+        presenter,
+        onResult,
+    )
+
+internal fun requestActivityViewController(
+    items: List<Any>,
+    presenter: UIViewController,
+    onResult: (ShareResult) -> Unit,
+): UIActivityViewController =
+    UIActivityViewController(items, null).apply {
         popoverPresentationController?.apply {
             sourceView = presenter.view
             sourceRect = presenter.view.bounds

@@ -11,7 +11,7 @@ For a local run in PowerShell:
 ```powershell
 New-Item -ItemType Directory -Force build/sharekit-native
 Push-Location build/sharekit-native
-jar xf C:/path/to/kmp-sharekit-jvm-0.6.0.jar native/windows-x64/sharekit_windows.dll
+jar xf C:/path/to/kmp-sharekit-jvm-0.7.0.jar native/windows-x64/sharekit_windows.dll
 Pop-Location
 java '-Djava.library.path=C:/absolute/path/to/build/sharekit-native/native/windows-x64' -jar my-app.jar
 ```

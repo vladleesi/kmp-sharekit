@@ -78,6 +78,7 @@ for artifact, extension in artifacts.items():
             require(magic == 0xCAFEBABE and slices == 2, "macOS bridge must be a universal binary")
             architectures = {struct.unpack_from(">I", native, 8 + index * 20)[0] for index in range(slices)}
             require(architectures == {0x01000007, 0x0100000C}, "macOS bridge must contain x86_64 and arm64")
+            require(b"MacSharingBridge_presentFiles\0" in native, "Missing macOS file sharing JNI export")
             windows_path = "native/windows-x64/sharekit_windows.dll"
             require(windows_path in binary.namelist(), "Missing Windows x64 JNI bridge")
             windows = binary.read(windows_path)
@@ -86,7 +87,8 @@ for artifact, extension in artifacts.items():
             require(pe + 24 <= len(windows) and windows[pe:pe + 4] == b"PE\0\0", "Invalid PE header")
             require(struct.unpack_from("<H", windows, pe + 4)[0] == 0x8664, "Windows bridge must be x64")
             require(struct.unpack_from("<H", windows, pe + 22)[0] & 0x2000, "Windows bridge must be a DLL")
-            for entry in (b"WindowsSharingBridge_available\0", b"WindowsSharingBridge_present\0"):
+            for entry in (b"WindowsSharingBridge_available\0", b"WindowsSharingBridge_present\0",
+                          b"WindowsSharingBridge_presentFiles\0"):
                 require(entry in windows, f"Missing Windows JNI export: {entry!r}")
         for usage in ("java-api", "java-runtime"):
             variants = [variant for variant in module["variants"]

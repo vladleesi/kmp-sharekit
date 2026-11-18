@@ -36,21 +36,8 @@ public actual object ShareKit {
         request: ShareRequest,
         onResult: (ShareResult) -> Unit,
     ) {
-        val failure =
-            when {
-                Looper.myLooper() != Looper.getMainLooper() -> ShareResult.Failed(ShareFailure.WRONG_THREAD)
-                else -> request.failure(capabilities())
-            }
-        if (failure != null) {
-            onResult(failure)
-            return
-        }
-        if (activity == null || activity.isFinishing || activity.isDestroyed) {
-            onResult(ShareResult.Failed(ShareFailure.HOST_UNAVAILABLE))
-            return
-        }
         val result =
-            shareAttempt {
+            launchChooser(activity, request.failure(capabilities())) { host ->
                 val intent =
                     Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
@@ -60,10 +47,48 @@ public actual object ShareKit {
                             putExtra(Intent.EXTRA_TITLE, it)
                         }
                     }
-                activity.startActivity(Intent.createChooser(intent, null))
+                host.startActivity(Intent.createChooser(intent, null))
             }
         onResult(result)
     }
+
+    public actual fun canShareFiles(request: ShareFilesRequest): Boolean = request.failure(capabilities()) == null
+
+    public actual fun shareFiles(
+        request: ShareFilesRequest,
+        onResult: (ShareResult) -> Unit,
+    ) {
+        shareFilesWithHost(activityReference?.get(), request, onResult)
+    }
+
+    /** Shares files from an explicit Activity. */
+    public fun shareFiles(
+        activity: Activity,
+        request: ShareFilesRequest,
+        onResult: (ShareResult) -> Unit,
+    ) {
+        shareFilesWithHost(activity, request, onResult)
+    }
+
+    private fun shareFilesWithHost(
+        activity: Activity?,
+        request: ShareFilesRequest,
+        onResult: (ShareResult) -> Unit,
+    ) {
+        onResult(launchChooser(activity, request.failure(capabilities())) { shareFilesFromActivity(it, request) })
+    }
+
+    private inline fun launchChooser(
+        activity: Activity?,
+        invalid: ShareResult.Failed?,
+        open: (Activity) -> Unit,
+    ): ShareResult =
+        when {
+            Looper.myLooper() != Looper.getMainLooper() -> ShareResult.Failed(ShareFailure.WRONG_THREAD)
+            invalid != null -> invalid
+            activity == null || activity.isFinishing || activity.isDestroyed -> ShareResult.Failed(ShareFailure.HOST_UNAVAILABLE)
+            else -> shareAttempt { open(activity) }
+        }
 
     /** Registers the current Activity without retaining it. Call from `onResume`. */
     public fun setActivity(activity: Activity) {
@@ -126,7 +151,7 @@ internal actual fun validShareUrl(url: String): Boolean =
     }
 
 // Invoke user code outside platform try/catch blocks so callback exceptions are never reported twice.
-internal fun shareAttempt(block: () -> Unit): ShareResult =
+internal inline fun shareAttempt(block: () -> Unit): ShareResult =
     try {
         block()
         ShareResult.Launched

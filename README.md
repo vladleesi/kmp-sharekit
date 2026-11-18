@@ -1,18 +1,18 @@
 # ShareKit
 
-Text and URL sharing for Kotlin Multiplatform on Android, iOS, JVM desktop, and browsers. Use it from shared Kotlin or Compose UI; the library has no Compose or coroutine dependency.
+Text, URL, and file sharing for Kotlin Multiplatform on Android, iOS, JVM desktop, and browsers. Use it from shared Kotlin or Compose UI. The library has no Compose or coroutine dependency.
 
 [![Maven Central](https://img.shields.io/maven-central/v/dev.vladleesi/kmp-sharekit)](https://central.sonatype.com/artifact/dev.vladleesi/kmp-sharekit)
 [![Build](https://github.com/vladleesi/kmp-sharekit/actions/workflows/ci.yml/badge.svg)](https://github.com/vladleesi/kmp-sharekit/actions/workflows/ci.yml)
 
 ## Install
 
-Use Kotlin 2.4.21+ and `mavenCentral()`. Add to your shared module:
+Use Kotlin 2.4.21+ and `mavenCentral()`. Include `google()` for Android dependencies. Add to your shared module:
 
 ```kotlin
 kotlin {
     sourceSets.commonMain.dependencies {
-        implementation("dev.vladleesi:kmp-sharekit:0.6.0")
+        implementation("dev.vladleesi:kmp-sharekit:0.7.0")
     }
 }
 ```
@@ -45,6 +45,27 @@ ShareKit.shareText("Hello from shared Kotlin!")
 
 On JVM, this legacy call opens an email draft. Use `share(request)` for native macOS/Windows sharing and typed failures.
 
+## Share files and images
+
+Supply each file's bytes, filename with extension, and MIME type. Use a single-item list to share one file.
+
+```kotlin
+import dev.vladleesi.kmpsharekit.ShareFile
+import dev.vladleesi.kmpsharekit.ShareFilesRequest
+
+val request = ShareFilesRequest(
+    files = listOf(
+        ShareFile("photo.png", "image/png", pngBytes),
+        ShareFile("notes.pdf", "application/pdf", pdfBytes),
+    ),
+    text = "Photos and notes from the trip",
+)
+// In your click or tap handler
+ShareKit.shareFiles(request, onResult)
+```
+
+`ShareFile` copies the supplied bytes. Load and encode them before the UI action. `canShareFiles(request)` checks the platform and payload without launching UI or requiring a browser gesture. Call `shareFiles` directly from a browser gesture. Browser support varies by file type and size. Linux email sharing has no attachment support, and iOS file requests accept optional text only. Apple and Windows use filename extensions to identify file types. Android and JVM desktop stage temporary files for the receiving app.
+
 ## Compose example
 
 Use the same request API from `commonMain`. Pass the result to your app's error or status UI:
@@ -72,7 +93,7 @@ fun ShareButton(text: String, onResult: (ShareResult) -> Unit) {
 
 | Platform | Sharing | Setup |
 | --- | --- | --- |
-| Android 21+ | Native share sheet | Register your Activity below; call on the main thread |
+| Android 23+ | Native share sheet | Register your Activity below; call on the main thread |
 | iOS 15+ | Native share sheet, including iPad | Visible view controller; call on the main thread |
 | JVM desktop | Native sharing on macOS 13+ and Windows 10 1607+ (x64 JVM); email on Linux | [macOS](docs/macos.md) / [Windows packaging](docs/windows.md), or a configured mail client |
 | JS / WasmJS | Web Share API | Supported browser, HTTPS, and a user gesture |

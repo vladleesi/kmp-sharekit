@@ -95,6 +95,24 @@ final class dev.vladleesi.kmpsharekit/ShareCapabilities { // dev.vladleesi.kmpsh
     final fun toString(): kotlin/String // dev.vladleesi.kmpsharekit/ShareCapabilities.toString|toString(){}[0]
 }
 
+final class dev.vladleesi.kmpsharekit/ShareFile { // dev.vladleesi.kmpsharekit/ShareFile|null[0]
+    constructor <init>(kotlin/String, kotlin/String, kotlin/ByteArray) // dev.vladleesi.kmpsharekit/ShareFile.<init>|<init>(kotlin.String;kotlin.String;kotlin.ByteArray){}[0]
+
+    final val mimeType // dev.vladleesi.kmpsharekit/ShareFile.mimeType|{}mimeType[0]
+        final fun <get-mimeType>(): kotlin/String // dev.vladleesi.kmpsharekit/ShareFile.mimeType.<get-mimeType>|<get-mimeType>(){}[0]
+    final val name // dev.vladleesi.kmpsharekit/ShareFile.name|{}name[0]
+        final fun <get-name>(): kotlin/String // dev.vladleesi.kmpsharekit/ShareFile.name.<get-name>|<get-name>(){}[0]
+}
+
+final class dev.vladleesi.kmpsharekit/ShareFilesRequest { // dev.vladleesi.kmpsharekit/ShareFilesRequest|null[0]
+    constructor <init>(kotlin.collections/List<dev.vladleesi.kmpsharekit/ShareFile>, kotlin/String? = ..., kotlin/String? = ...) // dev.vladleesi.kmpsharekit/ShareFilesRequest.<init>|<init>(kotlin.collections.List<dev.vladleesi.kmpsharekit.ShareFile>;kotlin.String?;kotlin.String?){}[0]
+
+    final val text // dev.vladleesi.kmpsharekit/ShareFilesRequest.text|{}text[0]
+        final fun <get-text>(): kotlin/String? // dev.vladleesi.kmpsharekit/ShareFilesRequest.text.<get-text>|<get-text>(){}[0]
+    final val title // dev.vladleesi.kmpsharekit/ShareFilesRequest.title|{}title[0]
+        final fun <get-title>(): kotlin/String? // dev.vladleesi.kmpsharekit/ShareFilesRequest.title.<get-title>|<get-title>(){}[0]
+}
+
 final class dev.vladleesi.kmpsharekit/ShareRequest { // dev.vladleesi.kmpsharekit/ShareRequest|null[0]
     constructor <init>(kotlin/String? = ..., kotlin/String? = ..., kotlin/String? = ...) // dev.vladleesi.kmpsharekit/ShareRequest.<init>|<init>(kotlin.String?;kotlin.String?;kotlin.String?){}[0]
 
@@ -116,13 +134,18 @@ final class dev.vladleesi.kmpsharekit/ShareRequest { // dev.vladleesi.kmpshareki
 
 final object dev.vladleesi.kmpsharekit/ShareKit { // dev.vladleesi.kmpsharekit/ShareKit|null[0]
     final fun canShare(dev.vladleesi.kmpsharekit/ShareRequest): kotlin/Boolean // dev.vladleesi.kmpsharekit/ShareKit.canShare|canShare(dev.vladleesi.kmpsharekit.ShareRequest){}[0]
+    final fun canShareFiles(dev.vladleesi.kmpsharekit/ShareFilesRequest): kotlin/Boolean // dev.vladleesi.kmpsharekit/ShareKit.canShareFiles|canShareFiles(dev.vladleesi.kmpsharekit.ShareFilesRequest){}[0]
     final fun capabilities(): dev.vladleesi.kmpsharekit/ShareCapabilities // dev.vladleesi.kmpsharekit/ShareKit.capabilities|capabilities(){}[0]
     final fun isSupported(): kotlin/Boolean // dev.vladleesi.kmpsharekit/ShareKit.isSupported|isSupported(){}[0]
     final fun share(dev.vladleesi.kmpsharekit/ShareRequest, kotlin/Function1<dev.vladleesi.kmpsharekit/ShareResult, kotlin/Unit>) // dev.vladleesi.kmpsharekit/ShareKit.share|share(dev.vladleesi.kmpsharekit.ShareRequest;kotlin.Function1<dev.vladleesi.kmpsharekit.ShareResult,kotlin.Unit>){}[0]
+    final fun shareFiles(dev.vladleesi.kmpsharekit/ShareFilesRequest, kotlin/Function1<dev.vladleesi.kmpsharekit/ShareResult, kotlin/Unit>) // dev.vladleesi.kmpsharekit/ShareKit.shareFiles|shareFiles(dev.vladleesi.kmpsharekit.ShareFilesRequest;kotlin.Function1<dev.vladleesi.kmpsharekit.ShareResult,kotlin.Unit>){}[0]
     final fun shareText(kotlin/String) // dev.vladleesi.kmpsharekit/ShareKit.shareText|shareText(kotlin.String){}[0]
 
     // Targets: [ios]
     final fun share(dev.vladleesi.kmpsharekit/ShareRequest, platform.UIKit/UIViewController, kotlin/Function1<dev.vladleesi.kmpsharekit/ShareResult, kotlin/Unit>) // dev.vladleesi.kmpsharekit/ShareKit.share|share(dev.vladleesi.kmpsharekit.ShareRequest;platform.UIKit.UIViewController;kotlin.Function1<dev.vladleesi.kmpsharekit.ShareResult,kotlin.Unit>){}[0]
+
+    // Targets: [ios]
+    final fun shareFiles(dev.vladleesi.kmpsharekit/ShareFilesRequest, platform.UIKit/UIViewController, kotlin/Function1<dev.vladleesi.kmpsharekit/ShareResult, kotlin/Unit>) // dev.vladleesi.kmpsharekit/ShareKit.shareFiles|shareFiles(dev.vladleesi.kmpsharekit.ShareFilesRequest;platform.UIKit.UIViewController;kotlin.Function1<dev.vladleesi.kmpsharekit.ShareResult,kotlin.Unit>){}[0]
 
     // Targets: [ios]
     final fun shareText(kotlin/String, platform.UIKit/UIViewController) // dev.vladleesi.kmpsharekit/ShareKit.shareText|shareText(kotlin.String;platform.UIKit.UIViewController){}[0]

@@ -26,15 +26,31 @@ public final class dev/vladleesi/kmpsharekit/ShareFailure : java/lang/Enum {
 	public static fun values ()[Ldev/vladleesi/kmpsharekit/ShareFailure;
 }
 
+public final class dev/vladleesi/kmpsharekit/ShareFile {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;[B)V
+	public final fun getMimeType ()Ljava/lang/String;
+	public final fun getName ()Ljava/lang/String;
+}
+
+public final class dev/vladleesi/kmpsharekit/ShareFilesRequest {
+	public fun <init> (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getText ()Ljava/lang/String;
+	public final fun getTitle ()Ljava/lang/String;
+}
+
 public final class dev/vladleesi/kmpsharekit/ShareKit {
 	public static final field INSTANCE Ldev/vladleesi/kmpsharekit/ShareKit;
 	public final fun canShare (Ldev/vladleesi/kmpsharekit/ShareRequest;)Z
+	public final fun canShareFiles (Ldev/vladleesi/kmpsharekit/ShareFilesRequest;)Z
 	public final fun capabilities ()Ldev/vladleesi/kmpsharekit/ShareCapabilities;
 	public final fun isSupported ()Z
 	public final fun setActivity (Landroid/app/Activity;)V
 	public final fun setActivityProvider (Lkotlin/jvm/functions/Function0;)V
 	public final fun share (Landroid/app/Activity;Ldev/vladleesi/kmpsharekit/ShareRequest;Lkotlin/jvm/functions/Function1;)V
 	public final fun share (Ldev/vladleesi/kmpsharekit/ShareRequest;Lkotlin/jvm/functions/Function1;)V
+	public final fun shareFiles (Landroid/app/Activity;Ldev/vladleesi/kmpsharekit/ShareFilesRequest;Lkotlin/jvm/functions/Function1;)V
+	public final fun shareFiles (Ldev/vladleesi/kmpsharekit/ShareFilesRequest;Lkotlin/jvm/functions/Function1;)V
 	public final fun shareText (Landroid/app/Activity;Ljava/lang/String;)V
 	public final fun shareText (Ljava/lang/String;)V
 }

@@ -6,10 +6,17 @@ internal fun shareOnWindows(
     request: ShareRequest,
     callback: (ShareResult) -> Unit,
 ) {
+    showWindowsPanel(callback) { WindowsSharingBridge.present(request.text, request.url, request.title) }
+}
+
+internal fun showWindowsPanel(
+    callback: (ShareResult) -> Unit,
+    present: () -> Int,
+) {
     EventQueue.invokeLater {
         val result =
             try {
-                windowsSharingResult(WindowsSharingBridge.present(request.text, request.url, request.title))
+                windowsSharingResult(present())
             } catch (error: LinkageError) {
                 ShareResult.Failed(ShareFailure.UNAVAILABLE, error)
             } catch (error: Exception) {
@@ -47,5 +54,11 @@ internal object WindowsSharingBridge {
         text: String?,
         url: String?,
         title: String?,
+    ): Int
+
+    external fun presentFiles(
+        text: String?,
+        title: String?,
+        paths: Array<String>,
     ): Int
 }

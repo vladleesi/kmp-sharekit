@@ -103,13 +103,23 @@ JNIEXPORT jboolean JNICALL Java_dev_vladleesi_kmpsharekit_MacSharingBridge_avail
     return JNI_FALSE;
 }
 
-JNIEXPORT void JNICALL Java_dev_vladleesi_kmpsharekit_MacSharingBridge_present(
-    JNIEnv *env, jobject bridge, jstring text, jstring url, jstring title, jobject callback) {
+static void presentPayload(JNIEnv *env, jstring text, jstring url, jstring title, jobjectArray paths, jobject callback) {
     @autoreleasepool {
         NSString *nativeText = fromJava(env, text);
         NSString *nativeUrl = fromJava(env, url);
         NSString *nativeTitle = fromJava(env, title);
         if ((*env)->ExceptionCheck(env)) return;
+        NSMutableArray<NSURL *> *files = [NSMutableArray array];
+        if (paths) {
+            jsize count = (*env)->GetArrayLength(env, paths);
+            for (jsize index = 0; index < count; index++) {
+                jstring path = (*env)->GetObjectArrayElement(env, paths, index);
+                NSString *nativePath = fromJava(env, path);
+                if (path) (*env)->DeleteLocalRef(env, path);
+                if (!nativePath || (*env)->ExceptionCheck(env)) return;
+                [files addObject:[NSURL fileURLWithPath:nativePath]];
+            }
+        }
         jclass callbackClass = (*env)->GetObjectClass(env, callback);
         if (!callbackClass) return;
         jmethodID complete = (*env)->GetMethodID(env, callbackClass, "complete", "(ILjava/lang/String;)V");
@@ -154,10 +164,21 @@ JNIEXPORT void JNICALL Java_dev_vladleesi_kmpsharekit_MacSharingBridge_present(
                     if (!parsed) { completion(4, @"Unable to create native URL"); return; }
                     [items addObject:parsed];
                 }
+                [items addObjectsFromArray:files];
                 presentItemsWithPicker(items, nativeTitle, completion, ^NSSharingServicePicker *(NSArray *payload) {
                     return [[NSSharingServicePicker alloc] initWithItems:payload];
                 });
             }
         });
     }
+}
+
+JNIEXPORT void JNICALL Java_dev_vladleesi_kmpsharekit_MacSharingBridge_present(
+    JNIEnv *env, jobject bridge, jstring text, jstring url, jstring title, jobject callback) {
+    presentPayload(env, text, url, title, NULL, callback);
+}
+
+JNIEXPORT void JNICALL Java_dev_vladleesi_kmpsharekit_MacSharingBridge_presentFiles(
+    JNIEnv *env, jobject bridge, jstring text, jstring title, jobjectArray paths, jobject callback) {
+    presentPayload(env, text, NULL, title, paths, callback);
 }

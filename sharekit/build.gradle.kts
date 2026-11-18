@@ -34,7 +34,8 @@ kotlin {
     android {
         namespace = "dev.vladleesi.kmpsharekit"
         compileSdk = 37
-        minSdk = 21
+        minSdk = 23
+        androidResources.enable = true
         compilerOptions.jvmTarget.set(JvmTarget.JVM_1_8)
         withHostTest {
             isIncludeAndroidResources = true
@@ -74,6 +75,9 @@ kotlin {
     }
 
     sourceSets {
+        androidMain.dependencies {
+            implementation(libs.androidx.core)
+        }
         commonTest.dependencies {
             implementation(kotlin("test"))
         }
@@ -90,7 +94,7 @@ mavenPublishing {
     pom {
         name.set("ShareKit")
         description.set(
-            "Text sharing for Kotlin Multiplatform and Compose Multiplatform on Android, iOS, JVM desktop, and supported browsers (JS/WasmJS).",
+            "Text, URL, and file sharing for Kotlin Multiplatform on Android, iOS, JVM desktop, and supported browsers (JS/WasmJS).",
         )
         url.set("https://github.com/vladleesi/kmp-sharekit")
         licenses {

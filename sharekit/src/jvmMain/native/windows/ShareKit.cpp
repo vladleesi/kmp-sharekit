@@ -4,14 +4,18 @@
 #include <shobjidl.h>
 #include <winrt/Windows.ApplicationModel.DataTransfer.h>
 #include <winrt/Windows.Foundation.h>
+#include <winrt/Windows.Foundation.Collections.h>
+#include <winrt/Windows.Storage.h>
 #include <jni.h>
 #include <functional>
 #include <cstdio>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace sharekit {
 using namespace winrt::Windows::ApplicationModel::DataTransfer;
+using namespace winrt::Windows::Storage;
 
 // The HWND, WinRT manager, event registration, and subclass all belong to the
 // native window thread (AWT's Windows toolkit thread, distinct from Java's EDT).
@@ -28,6 +32,7 @@ struct Payload {
     std::wstring text;
     std::wstring url;
     std::wstring title;
+    std::vector<std::wstring> paths{};
 
     void populate(DataPackage const& data) const {
         data.Properties().Title(title.empty() ? L"Share" : winrt::hstring(title));
@@ -36,6 +41,31 @@ struct Payload {
         if (!url.empty()) data.SetWebLink(winrt::Windows::Foundation::Uri(url));
     }
 };
+
+static void reportDataFailure(DataRequest const& request) noexcept {
+    // Panel launch was already reported. Show data preparation failures in the system UI.
+    try { request.FailWithDisplayText(L"Unable to prepare content for sharing."); } catch (...) { }
+}
+
+static winrt::Windows::Foundation::IAsyncAction addFiles(DataPackage data, std::vector<std::wstring> paths) {
+    std::vector<IStorageItem> files;
+    files.reserve(paths.size());
+    for (auto const& path : paths) {
+        auto file = co_await StorageFile::GetFileFromPathAsync(path);
+        files.push_back(file.as<IStorageItem>());
+    }
+    data.SetStorageItems(winrt::single_threaded_vector<IStorageItem>(std::move(files)), true);
+}
+
+static winrt::fire_and_forget populateFiles(DataRequest request, DataRequestDeferral deferral,
+                                            std::vector<std::wstring> paths) {
+    try {
+        co_await addFiles(request.Data(), std::move(paths));
+    } catch (...) {
+        reportDataFailure(request);
+    }
+    try { deferral.Complete(); } catch (...) { } // The panel may have closed before the files are ready.
+}
 
 struct Session {
     DataTransferManager manager{nullptr};
@@ -83,12 +113,15 @@ static void presentForWindow(HWND window, Payload const& payload) {
     winrt::check_hresult(interop->GetForWindow(window, winrt::guid_of<DataTransferManager>(),
                                              winrt::put_abi(session->manager)));
     session->requested = session->manager.DataRequested([payload](auto const&, DataRequestedEventArgs const& args) {
+        auto request = args.Request();
         try {
-            payload.populate(args.Request().Data());
+            payload.populate(request.Data());
+            if (!payload.paths.empty()) {
+                auto paths = payload.paths;
+                populateFiles(request, request.GetDeferral(), std::move(paths));
+            }
         } catch (...) {
-            // The panel was already launched. Report data preparation failures in
-            // the system UI rather than issuing a second application callback.
-            args.Request().FailWithDisplayText(L"Unable to prepare content for sharing.");
+            reportDataFailure(request);
         }
     });
     session->registered = true;
@@ -164,10 +197,21 @@ extern "C" JNIEXPORT jboolean JNICALL Java_dev_vladleesi_kmpsharekit_WindowsShar
     catch (...) { return JNI_FALSE; }
 }
 
-extern "C" JNIEXPORT jint JNICALL Java_dev_vladleesi_kmpsharekit_WindowsSharingBridge_present(
-    JNIEnv* env, jobject, jstring text, jstring url, jstring title) {
+static jint presentPayload(JNIEnv* env, jstring text, jstring url, jstring title, jobjectArray paths) {
     try {
         sharekit::Payload payload{sharekit::fromJava(env, text), sharekit::fromJava(env, url), sharekit::fromJava(env, title)};
+        if (paths && !env->ExceptionCheck()) {
+            jsize count = env->GetArrayLength(paths);
+            payload.paths.reserve(count);
+            for (jsize index = 0; index < count; index++) {
+                auto path = static_cast<jstring>(env->GetObjectArrayElement(paths, index));
+                if (!path) return 4;
+                auto nativePath = sharekit::fromJava(env, path);
+                env->DeleteLocalRef(path);
+                if (env->ExceptionCheck()) return 4;
+                payload.paths.push_back(std::move(nativePath));
+            }
+        }
         if (env->ExceptionCheck()) return 4;
         HWND window = GetForegroundWindow();
         if (!sharekit::usableHost(window)) return 2;
@@ -188,4 +232,14 @@ extern "C" JNIEXPORT jint JNICALL Java_dev_vladleesi_kmpsharekit_WindowsSharingB
         if (exception) env->ThrowNew(exception, message);
         return 4;
     }
+}
+
+extern "C" JNIEXPORT jint JNICALL Java_dev_vladleesi_kmpsharekit_WindowsSharingBridge_present(
+    JNIEnv* env, jobject, jstring text, jstring url, jstring title) {
+    return presentPayload(env, text, url, title, nullptr);
+}
+
+extern "C" JNIEXPORT jint JNICALL Java_dev_vladleesi_kmpsharekit_WindowsSharingBridge_presentFiles(
+    JNIEnv* env, jobject, jstring text, jstring title, jobjectArray paths) {
+    return presentPayload(env, text, nullptr, title, paths);
 }
