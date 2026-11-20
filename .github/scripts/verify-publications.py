@@ -16,6 +16,7 @@ properties = dict(
 group = properties["GROUP"]
 version = properties["VERSION_NAME"]
 repository = root / "sharekit/build/maven-repository" / group.replace(".", "/")
+github_url = "https://github.com/vladleesi/kmp-sharekit"
 platform_extensions = {
     "": "jar",
     "-android": "aar",
@@ -53,6 +54,9 @@ for artifact, (component, suffix, extension) in artifacts.items():
                   "scm/developerConnection"):
         path = "/".join(f"m:{part}" for part in field.split("/"))
         require(bool(pom.findtext(path, namespaces=ns)), f"Missing POM {field}: {artifact}")
+    if not suffix:
+        urls = [pom.findtext(path, namespaces=ns) for path in ("m:url", "m:scm/m:url")]
+        require(github_url in urls, f"POM must link to {github_url}: {artifact}")
     require(pom.findtext("m:scm/m:tag", namespaces=ns) == f"v{version}", f"Incorrect SCM tag: {artifact}")
     module = json.loads((directory / f"{stem}.module").read_text())
     # Platform modules belong to the root KMP component and point back to its metadata.
@@ -60,13 +64,18 @@ for artifact, (component, suffix, extension) in artifacts.items():
         require(module["component"].get(field) == expected, f"Incorrect module {field}: {artifact}")
     filenames = [f"{stem}.{extension}", f"{stem}.pom", f"{stem}.module",
                  f"{stem}-sources.jar", f"{stem}-javadoc.jar"]
-    if suffix.startswith("-ios"):
+    if not suffix:
+        filenames.append(f"{stem}-kotlin-tooling-metadata.json")
+    elif suffix.startswith("-ios"):
         filenames.append(f"{stem}-metadata.jar")
     for filename in filenames:
         file = directory / filename
         require(file.is_file() and file.stat().st_size > 0, f"Missing artifact: {file}")
         if "--signed" in sys.argv:
             require(file.with_name(file.name + ".asc").is_file(), f"Missing signature: {file}")
+    if not suffix:
+        tooling_metadata = json.loads((directory / f"{stem}-kotlin-tooling-metadata.json").read_text())
+        require(tooling_metadata.get("projectTargets"), f"No Kotlin tooling metadata targets: {artifact}")
     with zipfile.ZipFile(directory / f"{stem}-sources.jar") as sources:
         require(any(name.endswith(".kt") for name in sources.namelist()), f"No Kotlin sources: {artifact}")
     with zipfile.ZipFile(directory / f"{stem}-javadoc.jar") as documentation:

@@ -139,4 +139,16 @@ fun ShareButton(text: String) {
 
 Use `sharing.shareFiles(filesRequest)` in `onClick` to share attachments.
 
-[Runnable samples](samples/README.md) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md) · [Roadmap](ROADMAP.md) · [Apache 2.0](LICENSE)
+## Sample app demos
+
+The same Compose sample opens the platform’s share picker with text, a link, or the bundled files. [Run the samples](samples/README.md).
+
+| Android | iOS |
+| --- | --- |
+| ![ShareKit sample opening the Android Sharesheet for text, a link, and two files](docs/media/android-share-demo.gif) | ![ShareKit sample opening and dismissing the iOS share sheet](docs/media/ios-share-demo.gif) |
+
+| macOS | Web (WasmJS in Chrome) |
+| --- | --- |
+| ![ShareKit desktop sample opening the native macOS share picker](docs/media/macos-share-demo.gif) | ![ShareKit web sample opening the share picker through Chrome's Web Share API](docs/media/web-share-demo.gif) |
+
+[Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md) · [Roadmap](ROADMAP.md) · [Apache 2.0](LICENSE)
