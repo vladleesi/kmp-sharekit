@@ -3,6 +3,7 @@
 Share text, links, and files from Kotlin Multiplatform apps on Android, iOS, desktop, and the web.
 
 [![Maven Central](https://img.shields.io/maven-central/v/dev.vladleesi/kmp-sharekit)](https://central.sonatype.com/artifact/dev.vladleesi/kmp-sharekit)
+[![Klibs.io](https://img.shields.io/badge/Klibs.io-listed-blue)](https://klibs.io/package/dev.vladleesi/kmp-sharekit)
 [![CI](https://github.com/vladleesi/kmp-sharekit/actions/workflows/ci.yml/badge.svg)](https://github.com/vladleesi/kmp-sharekit/actions/workflows/ci.yml)
 
 ## Install
